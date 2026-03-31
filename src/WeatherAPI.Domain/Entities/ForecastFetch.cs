@@ -22,7 +22,7 @@ public class ForecastFetch
 
     public Location Location { get; private set; }
     public ICollection<HourlyForecast> HourlyForecasts { get; private set; } = new List<HourlyForecast>();
-    public ICollection<FetchLog> FetchLogs { get; private set; } = new List<FetchLog>();
+    public FetchLog? FetchLog { get; private set; }
     public ICollection<ForecastFetchUnit> ForecastFetchUnits { get; private set; } = new List<ForecastFetchUnit>();
 
     public static ForecastFetch Create(short locationId, string responseType, DateTime updatedAt, DateTime fetchedAt)
@@ -35,9 +35,9 @@ public class ForecastFetch
         HourlyForecasts.Add(hourlyForecast);
     }
 
-    public void AddFetchLog(FetchLog fetchLog)
+    public void SetFetchLog(FetchLog fetchLog)
     {
-        FetchLogs.Add(fetchLog);
+        FetchLog = fetchLog;
     }
 
     public void AddForecastFetchUnit(ForecastFetchUnit forecastFetchUnit)

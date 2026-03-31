@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\WeatherAPI.Application\WeatherAPI.Application.csproj" />
     <ProjectReference Include="..\WeatherAPI.Infrastructure\WeatherAPI.Infrastructure.csproj" />
+    <ProjectReference Include="..\WeatherAPI.Domain\WeatherAPI.Domain.csproj" />
   </ItemGroup>
 
 </Project>
