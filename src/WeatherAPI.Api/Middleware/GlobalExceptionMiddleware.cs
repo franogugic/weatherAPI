@@ -1,9 +1,10 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using WeatherAPI.Api.Common;
 
 namespace WeatherAPI.Api.Middleware;
 
-public class GlobalExceptionMiddleware(RequestDelegate next)
+public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -13,13 +14,25 @@ public class GlobalExceptionMiddleware(RequestDelegate next)
         }
         catch (ArgumentException exception)
         {
+            logger.LogWarning(
+                exception,
+                "A bad request error occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+
             await WriteErrorResponseAsync(
                 context,
                 StatusCodes.Status400BadRequest,
                 exception.Message);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            logger.LogError(
+                exception,
+                "An unhandled exception occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+
             await WriteErrorResponseAsync(
                 context,
                 StatusCodes.Status500InternalServerError,

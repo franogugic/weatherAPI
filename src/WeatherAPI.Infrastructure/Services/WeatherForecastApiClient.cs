@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
 
 namespace WeatherAPI.Infrastructure.Services;
 
-public class WeatherForecastApiClient(HttpClient httpClient) : IWeatherForecastApiClient
+public class WeatherForecastApiClient(HttpClient httpClient, ILogger<WeatherForecastApiClient> logger) : IWeatherForecastApiClient
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
@@ -44,8 +45,13 @@ public class WeatherForecastApiClient(HttpClient httpClient) : IWeatherForecastA
 
         if (forecastResponse is null)
         {
+            logger.LogWarning("MET API returned an empty or invalid response payload.");
             throw new InvalidOperationException("MET API returned an empty or invalid response.");
         }
+
+        logger.LogInformation(
+            "MET forecast response deserialized successfully with {TimeseriesCount} timeseries entries.",
+            forecastResponse.Properties.Timeseries.Count);
 
         return forecastResponse;
     }
