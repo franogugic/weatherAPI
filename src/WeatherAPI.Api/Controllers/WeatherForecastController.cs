@@ -16,15 +16,10 @@ public class WeatherForecastController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<IActionResult> Fetch(CancellationToken cancellationToken)
+    public async Task<IActionResult> Fetch(
+        [FromQuery] FetchWeatherForecastRequestDto request,
+        CancellationToken cancellationToken)
     {
-        FetchWeatherForecastRequestDto request = new FetchWeatherForecastRequestDto()
-        {
-            Latitude = 59.91m,
-            Longitude = 10.75m,
-            Altitude = 0
-        };
-        
         var response = await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
         return Ok(response);
     }

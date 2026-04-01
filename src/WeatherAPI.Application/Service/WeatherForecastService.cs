@@ -17,9 +17,14 @@ public class WeatherForecastService : IWeatherForecastService
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        if (request.Latitude is null || request.Longitude is null)
+        {
+            throw new ArgumentException("Latitude and longitude are required.");
+        }
+
         var response = await _weatherForecastApiClient.FetchForecastAsync(
-            request.Latitude,
-            request.Longitude,
+            request.Latitude.Value,
+            request.Longitude.Value,
             request.Altitude,
             cancellationToken);
 
