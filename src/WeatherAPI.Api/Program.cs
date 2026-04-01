@@ -1,6 +1,9 @@
+using DotNetEnv;
 using WeatherAPI.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Env.Load();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();

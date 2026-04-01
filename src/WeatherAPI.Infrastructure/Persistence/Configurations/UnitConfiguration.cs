@@ -22,12 +22,21 @@ public class UnitConfiguration : IEntityTypeConfiguration<Unit>
             .ValueGeneratedOnAdd();
 
         builder.Property(unit => unit.Value)
-            .HasColumnName("value");
+            .HasColumnName("value")
+            .HasColumnType("varchar(20)")
+            .HasMaxLength(20)
+            .IsUnicode(false);
 
         builder.Property(unit => unit.DisplayName)
-            .HasColumnName("display_name");
+            .HasColumnName("display_name")
+            .HasColumnType("varchar(20)")
+            .HasMaxLength(20)
+            .IsUnicode(false);
 
         builder.Property(unit => unit.Description)
-            .HasColumnName("desc");
+            .HasColumnName("desc")
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
+            .IsUnicode(false);
     }
 }

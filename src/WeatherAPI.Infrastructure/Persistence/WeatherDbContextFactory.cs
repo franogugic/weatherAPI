@@ -1,3 +1,4 @@
+using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -7,10 +8,13 @@ public class WeatherDbContextFactory : IDesignTimeDbContextFactory<WeatherDbCont
 {
     public WeatherDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<WeatherDbContext>();
+        Env.Load();
 
-        optionsBuilder.UseSqlServer(
-            "Server=localhost,1433;Database=WeatherDB;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;");
+        var optionsBuilder = new DbContextOptionsBuilder<WeatherDbContext>();
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__WeatherDb")
+            ?? throw new InvalidOperationException("ConnectionStrings__WeatherDb is not configured.");
+
+        optionsBuilder.UseSqlServer(connectionString);
 
         return new WeatherDbContext(optionsBuilder.Options);
     }

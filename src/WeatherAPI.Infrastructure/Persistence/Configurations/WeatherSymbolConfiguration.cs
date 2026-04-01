@@ -22,6 +22,9 @@ public class WeatherSymbolConfiguration : IEntityTypeConfiguration<WeatherSymbol
             .ValueGeneratedOnAdd();
 
         builder.Property(weatherSymbol => weatherSymbol.Code)
-            .HasColumnName("code");
+            .HasColumnName("code")
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
+            .IsUnicode(false);
     }
 }

@@ -18,6 +18,9 @@ public class MetricConfiguration : IEntityTypeConfiguration<Metric>
             .ValueGeneratedOnAdd();
 
         builder.Property(metric => metric.Name)
-            .HasColumnName("name");
+            .HasColumnName("name")
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
+            .IsUnicode(false);
     }
 }

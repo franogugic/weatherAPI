@@ -28,6 +28,9 @@ public class FetchLogConfiguration : IEntityTypeConfiguration<FetchLog>
             .HasColumnName("status_code");
 
         builder.Property(fetchLog => fetchLog.ErrorMessage)
-            .HasColumnName("error_message");
+            .HasColumnName("error_message")
+            .HasColumnType("varchar(1000)")
+            .HasMaxLength(1000)
+            .IsUnicode(false);
     }
 }

@@ -21,7 +21,10 @@ public class ForecastFetchConfiguration : IEntityTypeConfiguration<ForecastFetch
             .HasColumnName("location_id");
 
         builder.Property(forecastFetch => forecastFetch.ResponseType)
-            .HasColumnName("response_type");
+            .HasColumnName("response_type")
+            .HasColumnType("varchar(50)")
+            .HasMaxLength(50)
+            .IsUnicode(false);
 
         builder.Property(forecastFetch => forecastFetch.UpdatedAt)
             .HasColumnName("updated_at")

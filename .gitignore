@@ -8,6 +8,7 @@ obj/
 
 .idea/
 .vscode/
+.env
 
 *.log
 

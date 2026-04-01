@@ -18,7 +18,9 @@ public class LocationConfiguration : IEntityTypeConfiguration<Location>
             .ValueGeneratedOnAdd();
 
         builder.Property(location => location.Name)
-            .HasColumnName("name");
+            .HasColumnName("name")
+            .HasColumnType("varchar(100)")
+            .HasMaxLength(100);
 
         builder.Property(location => location.Latitude)
             .HasColumnName("latitude")

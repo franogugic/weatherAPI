@@ -24,4 +24,9 @@ public class Unit
     {
         return new Unit(value, displayName, description);
     }
+
+    public void ChangeDisplayName(string displayName)
+    {
+        DisplayName = displayName;
+    }
 }

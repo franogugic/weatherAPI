@@ -20,7 +20,7 @@ public class ForecastFetch
     public DateTime UpdatedAt { get; private set; }
     public DateTime FetchedAt { get; private set; }
 
-    public Location Location { get; private set; }
+    public Location? Location { get; private set; }
     public ICollection<HourlyForecast> HourlyForecasts { get; private set; } = new List<HourlyForecast>();
     public FetchLog? FetchLog { get; private set; }
     public ICollection<ForecastFetchUnit> ForecastFetchUnits { get; private set; } = new List<ForecastFetchUnit>();
