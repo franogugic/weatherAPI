@@ -33,6 +33,15 @@ public class LocationConfiguration : IEntityTypeConfiguration<Location>
         builder.Property(location => location.Altitude)
             .HasColumnName("altitude");
 
+        builder.HasIndex(location => new
+            {
+                location.Latitude,
+                location.Longitude,
+                location.Altitude
+            })
+            .IsUnique()
+            .HasDatabaseName("UQ_Location_Latitude_Longitude_Altitude");
+
         builder.HasMany(location => location.ForecastFetches)
             .WithOne(forecastFetch => forecastFetch.Location)
             .HasForeignKey(forecastFetch => forecastFetch.LocationId)

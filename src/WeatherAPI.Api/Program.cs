@@ -1,12 +1,12 @@
-using DotNetEnv;
 using Microsoft.AspNetCore.Mvc;
 using WeatherAPI.Api.Common;
 using WeatherAPI.Api.Middleware;
+using WeatherAPI.Infrastructure.Configuration;
 using WeatherAPI.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Env.Load();
+EnvironmentLoader.LoadFromRoot();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();

@@ -1,6 +1,6 @@
-using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using WeatherAPI.Infrastructure.Configuration;
 
 namespace WeatherAPI.Infrastructure.Persistence;
 
@@ -8,7 +8,7 @@ public class WeatherDbContextFactory : IDesignTimeDbContextFactory<WeatherDbCont
 {
     public WeatherDbContext CreateDbContext(string[] args)
     {
-        Env.Load();
+        EnvironmentLoader.LoadFromRoot();
 
         var optionsBuilder = new DbContextOptionsBuilder<WeatherDbContext>();
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__WeatherDb")

@@ -1,6 +1,7 @@
 using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
+using WeatherAPI.Domain.Entities;
 
 namespace WeatherAPI.Application.Service;
 
@@ -27,7 +28,11 @@ public class WeatherForecastService : IWeatherForecastService
             request.Longitude.Value,
             request.Altitude,
             cancellationToken);
-
+        
+        // Mapiranje lokacije
+        
+        Location.Create(request.Latitude.Value, request.Longitude.Value, request.Altitude, null);
+        
         return response;
     }
     
