@@ -4,12 +4,11 @@ public class Location
 {
     private Location() { }
 
-    private Location(decimal latitude, decimal longitude, short? altitude, string? name)
+    private Location(decimal latitude, decimal longitude, short? altitude)
     {
         Latitude = latitude;
         Longitude = longitude;
         Altitude = altitude;
-        Name = name;
     }
 
     public short Id { get; private set; }
@@ -20,9 +19,9 @@ public class Location
 
     public ICollection<ForecastFetch> ForecastFetches { get; private set; } = new List<ForecastFetch>();
     
-    public static Location Create(decimal latitude, decimal longitude, short? altitude, string? name = null)
+    public static Location Create(decimal latitude, decimal longitude, short? altitude)
     {
-        return new Location(latitude, longitude, altitude, name);
+        return new Location(latitude, longitude, altitude);
     }
 
     public void Rename(string? name)

@@ -86,6 +86,16 @@ public class ForecastRepository : IForecastRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.ForecastFetches
+            .AsNoTracking()
+            .Where(fetch => fetch.LocationId == locationId)
+            .OrderByDescending(fetch => fetch.FetchedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task ExecuteInTransactionAsync(
         Func<CancellationToken, Task> operation,
         CancellationToken cancellationToken = default)
@@ -93,7 +103,7 @@ public class ForecastRepository : IForecastRepository
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
         try
-        {
+        { 
             await operation(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }

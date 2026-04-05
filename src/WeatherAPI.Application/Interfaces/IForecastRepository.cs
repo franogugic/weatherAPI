@@ -16,4 +16,6 @@ public interface IForecastRepository
     Task AddHourlyForecastsAsync(IEnumerable<HourlyForecast> hourlyForecasts, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
     Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
+    Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId, CancellationToken cancellationToken = default);
+
 }
