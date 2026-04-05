@@ -6,9 +6,9 @@ public class ForecastFetch
     {
     }
 
-    private ForecastFetch(short locationId, string responseType, DateTime updatedAt, DateTime fetchedAt)
+    private ForecastFetch(Location location, string responseType, DateTime? updatedAt, DateTime fetchedAt)
     {
-        LocationId = locationId;
+        Location = location;
         ResponseType = responseType;
         UpdatedAt = updatedAt;
         FetchedAt = fetchedAt;
@@ -17,7 +17,7 @@ public class ForecastFetch
     public int Id { get; private set; }
     public short LocationId { get; private set; }
     public string ResponseType { get; private set; } = string.Empty;
-    public DateTime UpdatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
     public DateTime FetchedAt { get; private set; }
 
     public Location? Location { get; private set; }
@@ -25,9 +25,9 @@ public class ForecastFetch
     public FetchLog? FetchLog { get; private set; }
     public ICollection<ForecastFetchUnit> ForecastFetchUnits { get; private set; } = new List<ForecastFetchUnit>();
 
-    public static ForecastFetch Create(short locationId, string responseType, DateTime updatedAt, DateTime fetchedAt)
+    public static ForecastFetch Create(Location location, string responseType, DateTime? updatedAt, DateTime fetchedAt)
     {
-        return new ForecastFetch(locationId, responseType, updatedAt, fetchedAt);
+        return new ForecastFetch(location, responseType, updatedAt, fetchedAt);
     }
 
     public void AddHourlyForecast(HourlyForecast hourlyForecast)

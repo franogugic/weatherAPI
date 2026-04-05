@@ -6,11 +6,11 @@ public class ForecastFetchUnit
     {
     }
 
-    private ForecastFetchUnit(int forecastFetchId, byte metricId, byte unitId)
+    private ForecastFetchUnit(ForecastFetch forecastFetch, Metric metric, Unit unit)
     {
-        ForecastFetchId = forecastFetchId;
-        MetricId = metricId;
-        UnitId = unitId;
+        ForecastFetch = forecastFetch;
+        Metric = metric;
+        Unit = unit;
     }
 
     public int ForecastFetchId { get; private set; }
@@ -21,8 +21,8 @@ public class ForecastFetchUnit
     public Metric? Metric { get; private set; }
     public Unit? Unit { get; private set; }
 
-    public static ForecastFetchUnit Create(int forecastFetchId, byte metricId, byte unitId)
+    public static ForecastFetchUnit Create(ForecastFetch forecastFetch, Metric metric, Unit unit)
     {
-        return new ForecastFetchUnit(forecastFetchId, metricId, unitId);
+        return new ForecastFetchUnit(forecastFetch, metric, unit);
     }
 }

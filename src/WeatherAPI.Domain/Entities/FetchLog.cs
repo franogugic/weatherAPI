@@ -6,9 +6,9 @@ public class FetchLog
     {
     }
 
-    private FetchLog(int forecastFetchId, short statusCode, string? errorMessage)
+    private FetchLog(ForecastFetch forecastFetch, short statusCode, string? errorMessage)
     {
-        ForecastFetchId = forecastFetchId;
+        ForecastFetch = forecastFetch;
         StatusCode = statusCode;
         ErrorMessage = errorMessage;
     }
@@ -20,8 +20,8 @@ public class FetchLog
 
     public ForecastFetch? ForecastFetch { get; private set; }
 
-    public static FetchLog Create(int forecastFetchId, short statusCode, string? errorMessage = null)
+    public static FetchLog Create(ForecastFetch forecastFetch, short statusCode, string? errorMessage = null)
     {
-        return new FetchLog(forecastFetchId, statusCode, errorMessage);
+        return new FetchLog(forecastFetch, statusCode, errorMessage);
     }
 }

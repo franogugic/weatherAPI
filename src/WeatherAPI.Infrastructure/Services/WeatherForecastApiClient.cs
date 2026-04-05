@@ -13,7 +13,7 @@ public class WeatherForecastApiClient(HttpClient httpClient, ILogger<WeatherFore
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<MetForecastResponse> FetchForecastAsync(
+    public async Task<ForecastApiResponse> FetchForecastAsync(
         decimal latitude,
         decimal longitude,
         short? altitude,
@@ -33,26 +33,47 @@ public class WeatherForecastApiClient(HttpClient httpClient, ILogger<WeatherFore
         var requestUri = $"weatherapi/locationforecast/2.0/compact?{string.Join("&", queryParameters)}";
 
         using var response = await httpClient.GetAsync(requestUri, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning(
+                "MET API request failed with status code {StatusCode}.",
+                (short)response.StatusCode);
+
+            return new ForecastApiResponse
+            {
+                StatusCode = (short)response.StatusCode,
+                ErrorMessage = string.IsNullOrWhiteSpace(responseContent)
+                    ? response.ReasonPhrase
+                    : responseContent
+            };
+        }
 
         var forecastResponse =
-            await JsonSerializer.DeserializeAsync<MetForecastResponse>(
-                responseStream,
-                JsonSerializerOptions,
-                cancellationToken);
+            JsonSerializer.Deserialize<MetForecastResponse>(
+                responseContent,
+                JsonSerializerOptions);
 
         if (forecastResponse is null)
         {
             logger.LogWarning("MET API returned an empty or invalid response payload.");
-            throw new InvalidOperationException("MET API returned an empty or invalid response.");
+
+            return new ForecastApiResponse
+            {
+                StatusCode = (short)response.StatusCode,
+                ErrorMessage = "MET API returned an empty or invalid response."
+            };
         }
 
         logger.LogInformation(
             "MET forecast response deserialized successfully with {TimeseriesCount} timeseries entries.",
             forecastResponse.Properties.Timeseries.Count);
 
-        return forecastResponse;
+        return new ForecastApiResponse
+        {
+            StatusCode = (short)response.StatusCode,
+            ForecastResponse = forecastResponse
+        };
     }
 }

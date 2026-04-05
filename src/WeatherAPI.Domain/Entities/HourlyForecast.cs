@@ -7,7 +7,7 @@ public class HourlyForecast
     }
 
     private HourlyForecast(
-        int forecastFetchId,
+        ForecastFetch forecastFetch,
         DateTime forecastTime,
         decimal? airTemperature,
         decimal? airPressureAtSeaLevel,
@@ -15,10 +15,10 @@ public class HourlyForecast
         byte? humidity,
         decimal? windDirection,
         decimal? windSpeed,
-        byte? weatherSymbolId,
+        WeatherSymbol? weatherSymbol,
         decimal? precipitationAmount)
     {
-        ForecastFetchId = forecastFetchId;
+        ForecastFetch = forecastFetch;
         ForecastTime = forecastTime;
         AirTemperature = airTemperature;
         AirPressureAtSeaLevel = airPressureAtSeaLevel;
@@ -26,7 +26,7 @@ public class HourlyForecast
         Humidity = humidity;
         WindDirection = windDirection;
         WindSpeed = windSpeed;
-        WeatherSymbolId = weatherSymbolId;
+        WeatherSymbol = weatherSymbol;
         PrecipitationAmount = precipitationAmount;
     }
 
@@ -45,7 +45,7 @@ public class HourlyForecast
     public WeatherSymbol? WeatherSymbol { get; private set; }
 
     public static HourlyForecast Create(
-        int forecastFetchId,
+        ForecastFetch forecastFetch,
         DateTime forecastTime,
         decimal? airTemperature,
         decimal? airPressureAtSeaLevel,
@@ -53,11 +53,11 @@ public class HourlyForecast
         byte? humidity,
         decimal? windDirection,
         decimal? windSpeed,
-        byte? weatherSymbolId,
+        WeatherSymbol? weatherSymbol,
         decimal? precipitationAmount)
     {
         return new HourlyForecast(
-            forecastFetchId,
+            forecastFetch,
             forecastTime,
             airTemperature,
             airPressureAtSeaLevel,
@@ -65,7 +65,7 @@ public class HourlyForecast
             humidity,
             windDirection,
             windSpeed,
-            weatherSymbolId,
+            weatherSymbol,
             precipitationAmount);
     }
 }

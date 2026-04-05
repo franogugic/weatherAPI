@@ -3,10 +3,15 @@ using WeatherAPI.Api.Common;
 using WeatherAPI.Api.Middleware;
 using WeatherAPI.Infrastructure.Configuration;
 using WeatherAPI.Infrastructure;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
+EnvironmentLoader.LoadFromRoot();
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-EnvironmentLoader.LoadFromRoot();
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Model.Validation", LogLevel.Error);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
@@ -38,7 +43,12 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 var app = builder.Build();
 
 app.UseGlobalExceptionMiddleware();
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 

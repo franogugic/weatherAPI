@@ -4,7 +4,7 @@ namespace WeatherAPI.Application.Interfaces;
 
 public interface IWeatherForecastApiClient
 {
-    Task<MetForecastResponse> FetchForecastAsync(
+    Task<ForecastApiResponse> FetchForecastAsync(
         decimal latitude,
         decimal longitude,
         short? altitude,

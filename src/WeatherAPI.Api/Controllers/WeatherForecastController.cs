@@ -20,7 +20,7 @@ public class WeatherForecastController : ControllerBase
         [FromQuery] FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken)
     {
-        var response = await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
-        return Ok(response);
+        await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
+        return Ok();
     }
 }

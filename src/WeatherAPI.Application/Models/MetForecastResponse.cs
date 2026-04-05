@@ -9,6 +9,7 @@ public class MetForecastResponse
 
 public class MetForecastProperties
 {
+    public MetForecastMeta Meta { get; set; } = new();
     public List<MetForecastTimeseries> Timeseries { get; set; } = [];
 }
 
@@ -16,6 +17,14 @@ public class MetForecastTimeseries
 {
     public DateTime Time { get; set; }
     public MetForecastData Data { get; set; } = new();
+}
+
+public class MetForecastMeta
+{
+    [JsonPropertyName("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+
+    public Dictionary<string, string> Units { get; set; } = [];
 }
 
 public class MetForecastData

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Service;
 using WeatherAPI.Infrastructure.Persistence;
+using WeatherAPI.Infrastructure.Repositories;
 using WeatherAPI.Infrastructure.Services;
 
 namespace WeatherAPI.Infrastructure;
@@ -24,7 +25,8 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IWeatherForecastService, WeatherForecastService>();
-
+        services.AddScoped<ILocationRepository, LocationRepository>();
+        services.AddScoped<IForecastRepository, ForecastRepository>();
         
         return services;
     }

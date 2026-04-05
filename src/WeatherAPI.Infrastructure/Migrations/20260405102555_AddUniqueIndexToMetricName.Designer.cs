@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WeatherAPI.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using WeatherAPI.Infrastructure.Persistence;
 namespace WeatherAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(WeatherDbContext))]
-    partial class WeatherDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260405102555_AddUniqueIndexToMetricName")]
+    partial class AddUniqueIndexToMetricName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,7 +82,7 @@ namespace WeatherAPI.Infrastructure.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("response_type");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2(0)")
                         .HasColumnName("updated_at");
 
