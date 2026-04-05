@@ -23,4 +23,5 @@ public class WeatherForecastController : ControllerBase
         await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
         return Ok();
     }
+    
 }

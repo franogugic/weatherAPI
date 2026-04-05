@@ -81,6 +81,19 @@ public class WeatherForecastService : IWeatherForecastService
                     return;
                 }
 
+                var lastFetchByLocation =
+                    await _forecastRepository.GetLatestFetchByLocationAsync(location.Id, transactionCancellationToken);
+                if (lastFetchByLocation is not null && lastFetchByLocation.UpdatedAt == apiResponse.ForecastResponse.Properties.Meta.UpdatedAt)
+                {
+                    await SaveFetchAndLogAsync(
+                        apiResponse,
+                        location,
+                        transactionCancellationToken);
+
+                    await _forecastRepository.SaveChangesAsync(transactionCancellationToken);
+                    return;
+                }
+
                 var lookupPreparation = await PrepareLookupDataAsync(
                     apiResponse.ForecastResponse,
                     transactionCancellationToken);
@@ -122,7 +135,7 @@ public class WeatherForecastService : IWeatherForecastService
             return location;
         }
 
-        location = Location.Create(latitude, longitude, altitude, null);
+        location = Location.Create(latitude, longitude, altitude);
         await _locationRepository.AddAsync(location, cancellationToken);
         await _forecastRepository.SaveChangesAsync(cancellationToken);
         return location;
@@ -179,9 +192,9 @@ public class WeatherForecastService : IWeatherForecastService
             }
         }
 
-        foreach (var entry in timeseriesWithNextPeriod)
+        foreach (var timeseriesEntry in timeseriesWithNextPeriod)
         {
-            var symbolCode = entry.NextPeriod?.Summary?.SymbolCode;
+            var symbolCode = timeseriesEntry.NextPeriod?.Summary?.SymbolCode;
 
             WeatherSymbol? weatherSymbol = null;
             if (!string.IsNullOrWhiteSpace(symbolCode) && !weatherSymbolByCode.TryGetValue(symbolCode, out weatherSymbol))
