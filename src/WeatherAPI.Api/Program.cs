@@ -1,10 +1,54 @@
+using Microsoft.AspNetCore.Mvc;
+using WeatherAPI.Api.Common;
+using WeatherAPI.Api.Middleware;
+using WeatherAPI.Infrastructure.Configuration;
+using WeatherAPI.Infrastructure;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
+EnvironmentLoader.LoadFromRoot();
+
+
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Model.Validation", LogLevel.Error);
+
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(modelStateEntry => modelStateEntry.Value?.Errors.Count > 0)
+            .ToDictionary(
+                modelStateEntry => modelStateEntry.Key,
+                modelStateEntry => modelStateEntry.Value!.Errors
+                    .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
+                        ? "The input was invalid."
+                        : error.ErrorMessage)
+                    .ToArray());
+
+        var errorResponse = new ErrorResponse
+        {
+            StatusCode = StatusCodes.Status400BadRequest,
+            Message = "Validation failed.",
+            Errors = errors
+        };
+
+        return new BadRequestObjectResult(errorResponse);
+    };
+});
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+app.UseGlobalExceptionMiddleware();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
