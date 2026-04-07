@@ -2,7 +2,6 @@ using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
 using WeatherAPI.Domain.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace WeatherAPI.Application.Service;
 
@@ -22,7 +21,7 @@ public class WeatherForecastService : IWeatherForecastService
         _forecastRepository = forecastRepository;
     }
     
-    public async Task FetchWeatherForecastAsync(
+    public async Task<FetchWeatherForecastResponseDto> FetchWeatherForecastAsync(
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default)
     {
@@ -35,7 +34,7 @@ public class WeatherForecastService : IWeatherForecastService
         var longitude = Math.Round(request.Longitude.Value, 6, MidpointRounding.AwayFromZero);
 
         var apiResponse = await FetchApiDataAsync(latitude, longitude, request.Altitude, cancellationToken);
-        await SaveToDbAsync(apiResponse, latitude, longitude, request.Altitude, cancellationToken);
+        return await SaveForecastDataAsync(apiResponse, latitude, longitude, request.Altitude, cancellationToken);
     }
 
     private async Task<ForecastApiResponse> FetchApiDataAsync(
@@ -54,13 +53,15 @@ public class WeatherForecastService : IWeatherForecastService
         return apiResponse;
     }
 
-    private async Task SaveToDbAsync(
+    private async Task<FetchWeatherForecastResponseDto> SaveForecastDataAsync(
         ForecastApiResponse apiResponse,
         decimal latitude,
         decimal longitude,
         short? altitude,
         CancellationToken cancellationToken)
     {
+        FetchWeatherForecastResponseDto? response = null;
+
         await _forecastRepository.ExecuteInTransactionAsync(
             async transactionCancellationToken =>
             {
@@ -72,41 +73,52 @@ public class WeatherForecastService : IWeatherForecastService
 
                 if (apiResponse.ForecastResponse is null)
                 {
-                    await SaveFetchAndLogAsync(
+                    await PersistFetchAttemptOnlyAsync(
                         apiResponse,
                         location,
                         transactionCancellationToken);
-
-                    await _forecastRepository.SaveChangesAsync(transactionCancellationToken);
+                    response = new FetchWeatherForecastResponseDto
+                    {
+                        Message = "Forecast fetch attempt was logged, but no forecast payload was returned.",
+                        ForecastDataPersisted = false,
+                        SkippedBecauseForecastUnchanged = false,
+                        HourlyForecastCount = 0
+                    };
                     return;
                 }
 
-                var lastFetchByLocation =
-                    await _forecastRepository.GetLatestFetchByLocationAsync(location.Id, transactionCancellationToken);
-                if (lastFetchByLocation is not null && lastFetchByLocation.UpdatedAt == apiResponse.ForecastResponse.Properties.Meta.UpdatedAt)
+                if (await HasUnchangedForecastDataAsync(
+                        location.Id,
+                        apiResponse.ForecastResponse.Properties.Meta.UpdatedAt,
+                        transactionCancellationToken))
                 {
-                    await SaveFetchAndLogAsync(
+                    await PersistFetchAttemptOnlyAsync(
                         apiResponse,
                         location,
                         transactionCancellationToken);
-
-                    await _forecastRepository.SaveChangesAsync(transactionCancellationToken);
+                    response = new FetchWeatherForecastResponseDto
+                    {
+                        Message = "Forecast fetch was logged, but forecast data was unchanged and was not persisted again.",
+                        ForecastDataPersisted = false,
+                        SkippedBecauseForecastUnchanged = true,
+                        HourlyForecastCount = 0
+                    };
                     return;
                 }
 
-                var lookupPreparation = await PrepareLookupDataAsync(
+                var lookupData = await PrepareLookupDataAsync(
                     apiResponse.ForecastResponse,
                     transactionCancellationToken);
 
-                var forecastFetch = await SaveFetchAndLogAsync(
+                var forecastFetch = await AddForecastFetchAndLogAsync(
                     apiResponse,
                     location,
                     transactionCancellationToken);
 
                 foreach (var fetchUnit in apiResponse.ForecastResponse.Properties.Meta.Units)
                 {
-                    var unit = lookupPreparation.UnitByValue[fetchUnit.Value];
-                    var metric = lookupPreparation.MetricByName[fetchUnit.Key];
+                    var unit = lookupData.UnitByValue[fetchUnit.Value];
+                    var metric = lookupData.MetricByName[fetchUnit.Key];
 
                     var forecastFetchUnit = ForecastFetchUnit.Create(forecastFetch, metric, unit);
                     await _forecastRepository.AddForecastFetchUnitAsync(forecastFetchUnit, transactionCancellationToken);
@@ -114,13 +126,22 @@ public class WeatherForecastService : IWeatherForecastService
 
                 var hourlyForecasts = CreateHourlyForecasts(
                     forecastFetch,
-                    lookupPreparation.TimeseriesWithNextPeriod,
-                    lookupPreparation.WeatherSymbolByCode);
+                    lookupData.TimeseriesWithNextPeriod,
+                    lookupData.WeatherSymbolByCode);
 
                 await _forecastRepository.AddHourlyForecastsAsync(hourlyForecasts, transactionCancellationToken);
                 await _forecastRepository.SaveChangesAsync(transactionCancellationToken);
+                response = new FetchWeatherForecastResponseDto
+                {
+                    Message = "Forecast data fetched and persisted successfully.",
+                    ForecastDataPersisted = true,
+                    SkippedBecauseForecastUnchanged = false,
+                    HourlyForecastCount = hourlyForecasts.Count
+                };
             },
             cancellationToken);
+
+        return response ?? throw new InvalidOperationException("Forecast save flow did not produce a response.");
     }
 
     private async Task<Location> GetOrCreateLocationAsync(
@@ -214,6 +235,15 @@ public class WeatherForecastService : IWeatherForecastService
             timeseriesWithNextPeriod);
     }
 
+    private async Task<bool> HasUnchangedForecastDataAsync(
+        short locationId,
+        DateTime updatedAt,
+        CancellationToken cancellationToken)
+    {
+        var latestFetch = await _forecastRepository.GetLatestFetchByLocationAsync(locationId, cancellationToken);
+        return latestFetch is not null && latestFetch.UpdatedAt == updatedAt;
+    }
+
     private static List<HourlyForecast> CreateHourlyForecasts(
         ForecastFetch forecastFetch,
         List<TimeseriesWithNextPeriod> timeseriesWithNextPeriod,
@@ -259,7 +289,16 @@ public class WeatherForecastService : IWeatherForecastService
         return hourlyForecasts;
     }
 
-    private async Task<ForecastFetch> SaveFetchAndLogAsync(
+    private async Task PersistFetchAttemptOnlyAsync(
+        ForecastApiResponse apiResponse,
+        Location location,
+        CancellationToken cancellationToken)
+    {
+        await AddForecastFetchAndLogAsync(apiResponse, location, cancellationToken);
+        await _forecastRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<ForecastFetch> AddForecastFetchAndLogAsync(
         ForecastApiResponse apiResponse,
         Location location,
         CancellationToken cancellationToken)

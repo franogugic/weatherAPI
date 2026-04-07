@@ -5,7 +5,7 @@ namespace WeatherAPI.Application.Interfaces;
 
 public interface IWeatherForecastService
 {
-    Task FetchWeatherForecastAsync(
+    Task<FetchWeatherForecastResponseDto> FetchWeatherForecastAsync(
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default);
 }
