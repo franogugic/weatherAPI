@@ -15,9 +15,9 @@ public class WeatherForecastController : ControllerBase
         _weatherForecastService = weatherForecastService;
     }
     
-    [HttpGet]
+    [HttpPost]
     public async Task<IActionResult> Fetch(
-        [FromQuery] FetchWeatherForecastRequestDto request,
+        [FromBody] FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken)
     {
         var response = await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
