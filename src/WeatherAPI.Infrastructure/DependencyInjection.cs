@@ -25,9 +25,11 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IWeatherForecastService, WeatherForecastService>();
+        services.AddScoped<IForecastPersistenceService, ForecastPersistenceService>();
+        services.AddScoped<IForecastReferenceDataService, ForecastReferenceDataService>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<IForecastRepository, ForecastRepository>();
-        
+
         return services;
     }
 }
