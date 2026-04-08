@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using WeatherAPI.Application.Interfaces;
@@ -32,48 +33,71 @@ public class WeatherForecastApiClient(HttpClient httpClient, ILogger<WeatherFore
 
         var requestUri = $"weatherapi/locationforecast/2.0/compact?{string.Join("&", queryParameters)}";
 
-        using var response = await httpClient.GetAsync(requestUri, cancellationToken);
-        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            logger.LogWarning(
-                "MET API request failed with status code {StatusCode}.",
-                (short)response.StatusCode);
+            using var response = await httpClient.GetAsync(requestUri, cancellationToken);
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(
+                    "MET API request failed with status code {StatusCode}.",
+                    (short)response.StatusCode);
+
+                return new ForecastApiResponse
+                {
+                    StatusCode = (short)response.StatusCode,
+                    ErrorMessage = string.IsNullOrWhiteSpace(responseContent)
+                        ? response.ReasonPhrase
+                        : responseContent
+                };
+            }
+
+            var forecastResponse =
+                JsonSerializer.Deserialize<MetForecastResponse>(
+                    responseContent,
+                    JsonSerializerOptions);
+
+            if (forecastResponse is null)
+            {
+                logger.LogWarning("MET API returned an empty or invalid response payload.");
+
+                return new ForecastApiResponse
+                {
+                    StatusCode = (short)response.StatusCode,
+                    ErrorMessage = "MET API returned an empty or invalid response."
+                };
+            }
+
+            logger.LogInformation(
+                "MET forecast response deserialized successfully with {TimeseriesCount} timeseries entries.",
+                forecastResponse.Properties.Timeseries.Count);
 
             return new ForecastApiResponse
             {
                 StatusCode = (short)response.StatusCode,
-                ErrorMessage = string.IsNullOrWhiteSpace(responseContent)
-                    ? response.ReasonPhrase
-                    : responseContent
+                ForecastResponse = forecastResponse
             };
         }
-
-        var forecastResponse =
-            JsonSerializer.Deserialize<MetForecastResponse>(
-                responseContent,
-                JsonSerializerOptions);
-
-        if (forecastResponse is null)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            logger.LogWarning("MET API returned an empty or invalid response payload.");
+            logger.LogWarning("MET API request timed out after all retry attempts.");
 
             return new ForecastApiResponse
             {
-                StatusCode = (short)response.StatusCode,
-                ErrorMessage = "MET API returned an empty or invalid response."
+                StatusCode = (short)HttpStatusCode.GatewayTimeout,
+                ErrorMessage = "MET API request timed out."
             };
         }
-
-        logger.LogInformation(
-            "MET forecast response deserialized successfully with {TimeseriesCount} timeseries entries.",
-            forecastResponse.Properties.Timeseries.Count);
-
-        return new ForecastApiResponse
+        catch (HttpRequestException exception)
         {
-            StatusCode = (short)response.StatusCode,
-            ForecastResponse = forecastResponse
-        };
+            logger.LogWarning(exception, "MET API request failed after all retry attempts.");
+
+            return new ForecastApiResponse
+            {
+                StatusCode = (short)HttpStatusCode.ServiceUnavailable,
+                ErrorMessage = "MET API request failed due to a network error."
+            };
+        }
     }
 }

@@ -1,0 +1,10 @@
+bin/
+obj/
+.git/
+.idea/
+.vs/
+.vscode/
+**/bin/
+**/obj/
+.DS_Store
+docker-compose.override.yml
