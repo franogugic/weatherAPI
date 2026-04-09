@@ -21,14 +21,17 @@ public class WeatherForecastService : IWeatherForecastService
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        //pripremanje kooordianta
         var coordinates = ValidateAndNormalizeCoordinates(request);
-
+ 
+        // fetch s MET API-a
         var apiResponse = await _weatherForecastApiClient.FetchForecastAsync(
             coordinates.Latitude,
             coordinates.Longitude,
             request.Altitude,
             cancellationToken);
 
+        // spremanje dohvacenih podataka u nasu bazu
         return await _forecastPersistenceService.SaveForecastDataAsync(
             apiResponse,
             coordinates,

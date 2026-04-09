@@ -14,6 +14,7 @@ public sealed class TimeoutPerAttemptHandler(IOptions<WeatherApiOptions> options
         using var timeoutCancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+        // prekid requesta nakon 5 sek
         timeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
 
         return await base.SendAsync(request, timeoutCancellationTokenSource.Token);
