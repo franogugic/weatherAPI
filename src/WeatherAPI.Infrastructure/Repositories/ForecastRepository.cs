@@ -93,6 +93,7 @@ public class ForecastRepository : IForecastRepository
     {
         return await _context.ForecastFetches
             .AsNoTracking()
+            .Include(forecastFetch => forecastFetch.FetchLog)
             .Where(fetch => fetch.LocationId == locationId)
             .OrderByDescending(fetch => fetch.FetchedAt)
             .FirstOrDefaultAsync(cancellationToken);

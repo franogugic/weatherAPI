@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using WeatherAPI.Api.Common;
+using WeatherAPI.Application.Common;
 
 namespace WeatherAPI.Api.Middleware;
 
@@ -12,7 +13,7 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
         {
             await next(context);
         }
-        catch (ArgumentException exception)
+        catch (BadRequestException exception)
         {
             logger.LogWarning(
                 exception,

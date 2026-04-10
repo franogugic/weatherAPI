@@ -39,7 +39,7 @@ public class WeatherForecastApiClient(
 
             using var response = await httpClient.GetAsync(requestUri, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            
+                
             // sve 4xx i 5xx greske
             if (!response.IsSuccessStatusCode)
             {
@@ -49,7 +49,6 @@ public class WeatherForecastApiClient(
 
                 return CreateApiErrorResponse(response, responseContent);
             }
-            
             // deserijaliziacija 
             var forecastResponse =
                 JsonSerializer.Deserialize<MetForecastResponse>(
@@ -63,7 +62,7 @@ public class WeatherForecastApiClient(
 
                 return new ForecastApiResponse
                 {
-                    StatusCode = (short)response.StatusCode,
+                    StatusCode = 502,
                     ErrorMessage = "MET API returned an empty or invalid response."
                 };
             }
@@ -78,6 +77,14 @@ public class WeatherForecastApiClient(
                 StatusCode = (short)response.StatusCode,
                 ForecastResponse = forecastResponse
             };
+        }
+        catch (JsonException exception)
+        {
+            logger.LogWarning(exception, "MET API returned an invalid response payload.");
+
+            return CreateErrorResponse(
+                HttpStatusCode.BadGateway,
+                "MET API returned an invalid response payload.");
         }
         // request timeoutan
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -95,6 +102,8 @@ public class WeatherForecastApiClient(
                 HttpStatusCode.ServiceUnavailable,
                 "MET API request failed due to a network error.");
         }
+
+
     }
 
     // req urk

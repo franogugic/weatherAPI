@@ -1,6 +1,7 @@
 using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
+using WeatherAPI.Application.Common;
 
 namespace WeatherAPI.Application.Service;
 
@@ -43,7 +44,7 @@ public class WeatherForecastService : IWeatherForecastService
     {
         if (request.Latitude is null || request.Longitude is null)
         {
-            throw new ArgumentException("Latitude and longitude are required.");
+            throw new BadRequestException("Latitude and longitude are required.");
         }
 
         return new Coordinates(

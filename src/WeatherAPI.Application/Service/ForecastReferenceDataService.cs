@@ -23,14 +23,14 @@ public class ForecastReferenceDataService : IForecastReferenceDataService
         var timeseriesWithNextPeriod = CreateTimeseriesWithNextPeriod(forecastResponse);
 
         var unitsByValue = await GetOrCreateUnitsAsync(units.Values, cancellationToken);
-        var metricByName = await GetOrCreateMetricsAsync(units.Keys, cancellationToken);
+        var metricsByName = await GetOrCreateMetricsAsync(units.Keys, cancellationToken);
         var weatherSymbolByCode = await GetOrCreateWeatherSymbolsAsync(
             timeseriesWithNextPeriod,
             cancellationToken);
 
         return new ForecastReferenceData(
             unitsByValue,
-            metricByName,
+            metricsByName,
             weatherSymbolByCode,
             timeseriesWithNextPeriod);
     }
@@ -44,7 +44,7 @@ public class ForecastReferenceDataService : IForecastReferenceDataService
         //dohvat svih postojecih unita iz baze, spremanje u dict
         var unitsByValue = (await _forecastRepository.GetUnitsByValuesAsync(distinctUnitValues, cancellationToken))
             .ToDictionary(unit => unit.Value);
-
+        
         // usporedba req unita s bazom, ako nema kreira novi
         foreach (var unitValue in distinctUnitValues)
         {
@@ -67,22 +67,22 @@ public class ForecastReferenceDataService : IForecastReferenceDataService
         CancellationToken cancellationToken)
     {
         var distinctMetricNames = metricNames.Distinct().ToList();
-        var metricByName = (await _forecastRepository.GetMetricsByNamesAsync(distinctMetricNames, cancellationToken))
+        var metricsByName = (await _forecastRepository.GetMetricsByNamesAsync(distinctMetricNames, cancellationToken))
             .ToDictionary(metric => metric.Name);
 
         foreach (var metricName in distinctMetricNames)
         {
-            if (metricByName.ContainsKey(metricName))
+            if (metricsByName.ContainsKey(metricName))
             {
                 continue;
             }
 
             var metric = Metric.Create(metricName);
             await _forecastRepository.AddMetricAsync(metric, cancellationToken);
-            metricByName[metricName] = metric;
+            metricsByName[metricName] = metric;
         }
 
-        return metricByName;
+        return metricsByName;
     }
 
     // kao kod unit i metirc
