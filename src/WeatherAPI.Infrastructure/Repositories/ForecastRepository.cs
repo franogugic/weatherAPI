@@ -81,21 +81,25 @@ public class ForecastRepository : IForecastRepository
         return Task.CompletedTask;
     }
     
+    //spremanje
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    // posljednji fetch za lokaciju
     public async Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId,
         CancellationToken cancellationToken = default)
     {
         return await _context.ForecastFetches
             .AsNoTracking()
+            .Include(forecastFetch => forecastFetch.FetchLog)
             .Where(fetch => fetch.LocationId == locationId)
             .OrderByDescending(fetch => fetch.FetchedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    //transakcija
     public async Task ExecuteInTransactionAsync(
         Func<CancellationToken, Task> operation,
         CancellationToken cancellationToken = default)

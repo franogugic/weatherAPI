@@ -32,6 +32,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
     {
         FetchWeatherForecastResponseDto? response = null;
 
+        // transakcija za spremanje met api responsa u nasu bazu
         await _forecastRepository.ExecuteInTransactionAsync(
             async transactionCancellationToken =>
             {
@@ -41,8 +42,10 @@ public class ForecastPersistenceService : IForecastPersistenceService
                     altitude,
                     transactionCancellationToken);
 
+                // ako met api nije vratio response
                 if (apiResponse.ForecastResponse is null)
                 {
+                    // spremamo samo taj fetch i log njegov u bazu
                     await PersistFetchAttemptOnlyAsync(apiResponse, location, transactionCancellationToken);
                     response = CreateResponse(WeatherForecastFetchStatus.LoggedWithoutPayload, 0);
                     return;
@@ -50,6 +53,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
 
                 var forecastResponse = apiResponse.ForecastResponse;
 
+                // ako je updated at sad isti kao na prolsom fetchu za tu lokaciju, spremamo samo fetch i log
                 if (await HasUnchangedForecastDataAsync(
                         location.Id,
                         forecastResponse.Properties.Meta.UpdatedAt,
@@ -59,28 +63,33 @@ public class ForecastPersistenceService : IForecastPersistenceService
                     response = CreateResponse(WeatherForecastFetchStatus.SkippedUnchanged, 0);
                     return;
                 }
-
+                
+                // priprema reference pdoataka; Metric, Unit i WeatherSymbol - spremljeni u bazu
                 var referenceData = await _forecastReferenceDataService.PrepareReferenceDataAsync(
                     forecastResponse,
                     transactionCancellationToken);
-
+                
+                //spremanje fetcha i lgoa
                 var forecastFetch = await AddForecastFetchAndLogAsync(
                     apiResponse,
                     location,
                     transactionCancellationToken);
-
+                
+                // spremanje fetchunita u bazu, spaja metric s unitom
                 await AddForecastFetchUnitsAsync(
                     forecastFetch,
                     forecastResponse.Properties.Meta.Units,
                     referenceData,
                     transactionCancellationToken);
 
+                // kreira listu forecatFetcheva
                 var hourlyForecasts = CreateHourlyForecasts(
                     forecastFetch,
                     referenceData.TimeseriesWithNextPeriod,
                     referenceData.WeatherSymbolByCode);
 
                 await _forecastRepository.AddHourlyForecastsAsync(hourlyForecasts, transactionCancellationToken);
+                //spremanje svega u bazu
                 await _forecastRepository.SaveChangesAsync(transactionCancellationToken);
 
                 response = CreateResponse(WeatherForecastFetchStatus.Persisted, hourlyForecasts.Count);
@@ -107,15 +116,20 @@ public class ForecastPersistenceService : IForecastPersistenceService
         return location;
     }
 
+    // ako podaci nisu promjenji od zadnjeg req za tu lokaciju
     private async Task<bool> HasUnchangedForecastDataAsync(
         short locationId,
         DateTime updatedAt,
         CancellationToken cancellationToken)
     {
         var latestFetch = await _forecastRepository.GetLatestFetchByLocationAsync(locationId, cancellationToken);
-        return latestFetch is not null && latestFetch.UpdatedAt == updatedAt;
+        return latestFetch is not null 
+               && latestFetch.UpdatedAt == updatedAt 
+               && latestFetch.FetchLog is not null
+               && latestFetch.FetchLog.StatusCode == 200;
     }
 
+    // u slucaju da met api nije vratio forecast response, ali je dohvacanje bilo uspjesno, spremamo samo fetch i log tog pokusaja
     private async Task PersistFetchAttemptOnlyAsync(
         ForecastApiResponse apiResponse,
         Location location,
@@ -125,6 +139,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
         await _forecastRepository.SaveChangesAsync(cancellationToken);
     }
 
+    //spremanje samo fetcha i loga
     private async Task<ForecastFetch> AddForecastFetchAndLogAsync(
         ForecastApiResponse apiResponse,
         Location location,
@@ -150,6 +165,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
         return forecastFetch;
     }
 
+    // spremanje fetchUniTA KOJI spaja metric s unitom
     private async Task AddForecastFetchUnitsAsync(
         ForecastFetch forecastFetch,
         IReadOnlyDictionary<string, string> units,
@@ -166,6 +182,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
         }
     }
 
+    // krieranje liste za hourlyForecast
     private static List<HourlyForecast> CreateHourlyForecasts(
         ForecastFetch forecastFetch,
         List<TimeseriesWithNextPeriod> timeseriesWithNextPeriod,
@@ -176,6 +193,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
             .ToList();
     }
 
+    // pojedinacni hourlygForecast
     private static HourlyForecast CreateHourlyForecast(
         ForecastFetch forecastFetch,
         TimeseriesWithNextPeriod entry,
@@ -197,6 +215,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
             entry.NextPeriod?.Details?.PrecipitationAmount);
     }
 
+    // dohvat simbola po kodu
     private static WeatherSymbol? ResolveWeatherSymbol(
         string? symbolCode,
         IReadOnlyDictionary<string, WeatherSymbol> weatherSymbolByCode)
@@ -216,6 +235,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
             : (byte?)Math.Round(value.Value, MidpointRounding.AwayFromZero);
     }
 
+    // kreiranje responsa
     private static FetchWeatherForecastResponseDto CreateResponse(
         WeatherForecastFetchStatus status,
         int hourlyForecastCount)

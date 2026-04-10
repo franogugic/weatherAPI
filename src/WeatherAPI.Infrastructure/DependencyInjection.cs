@@ -16,6 +16,9 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("WeatherDb")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__WeatherDb");
+        var weatherApiOptions = configuration
+            .GetSection(WeatherApiOptions.SectionName)
+            .Get<WeatherApiOptions>();
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -23,11 +26,19 @@ public static class DependencyInjection
                 "Database connection string is not configured. Set 'ConnectionStrings:WeatherDb' in configuration or 'ConnectionStrings__WeatherDb' in the environment/.env file.");
         }
 
+        if (weatherApiOptions is null)
+        {
+            throw new InvalidOperationException("WeatherApi configuration section is missing.");
+        }
+
         services.AddDbContext<WeatherDbContext>(options =>
             options.UseSqlServer(connectionString));
 
         services.AddOptions<WeatherApiOptions>()
             .Bind(configuration.GetSection(WeatherApiOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.BaseUrl), "WeatherApi:BaseUrl is required.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ForecastPath), "WeatherApi:ForecastPath is required.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.UserAgent), "WeatherApi:UserAgent is required.")
             .Validate(options => options.TimeoutSeconds > 0, "WeatherApi:TimeoutSeconds must be greater than 0.")
             .Validate(options => options.MaxRetryAttempts > 0, "WeatherApi:MaxRetryAttempts must be greater than 0.")
             .Validate(options => options.RetryDelayMilliseconds >= 0, "WeatherApi:RetryDelayMilliseconds must be 0 or greater.")
@@ -38,8 +49,8 @@ public static class DependencyInjection
 
         services.AddHttpClient<IWeatherForecastApiClient, WeatherForecastApiClient>(client =>
         {
-            client.BaseAddress = new Uri("https://api.met.no/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("WeatherAPI/1.0");
+            client.BaseAddress = new Uri(weatherApiOptions.BaseUrl);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(weatherApiOptions.UserAgent);
         })
             .AddHttpMessageHandler<RetryOnTransientFailureHandler>()
             .AddHttpMessageHandler<TimeoutPerAttemptHandler>();

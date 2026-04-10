@@ -15,14 +15,17 @@ public sealed class RetryOnTransientFailureHandler(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+        // retry logika... 3 pokusaja, 5 sek, 500ms delay
         for (var attempt = 1; attempt <= _options.MaxRetryAttempts; attempt++)
         {
             var requestClone = await CloneHttpRequestMessageAsync(request, cancellationToken);
 
+            // slanje req
             try
             {
                 var response = await base.SendAsync(requestClone, cancellationToken);
 
+                // ako vrati 4xx ili 5xx status kod
                 if (ShouldRetry(response.StatusCode, attempt))
                 {
                     logger.LogWarning(
@@ -36,6 +39,7 @@ public sealed class RetryOnTransientFailureHandler(
                     continue;
                 }
 
+                // 200 response, i zavrsva se retry 
                 return response;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < _options.MaxRetryAttempts)
@@ -63,6 +67,7 @@ public sealed class RetryOnTransientFailureHandler(
         throw new HttpRequestException("External API request failed after all retry attempts.");
     }
 
+    //provjera broja pokusja i analiza status coddea
     private bool ShouldRetry(HttpStatusCode statusCode, int attempt)
     {
         if (attempt >= _options.MaxRetryAttempts)
@@ -77,11 +82,13 @@ public sealed class RetryOnTransientFailureHandler(
             || numericStatusCode >= 500;
     }
 
+    //delay 500ms
     private Task DelayBeforeRetryAsync(CancellationToken cancellationToken)
     {
         return Task.Delay(TimeSpan.FromMilliseconds(_options.RetryDelayMilliseconds), cancellationToken);
     }
 
+    // kloniranje requesta
     private static async Task<HttpRequestMessage> CloneHttpRequestMessageAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
