@@ -117,4 +117,34 @@ public class ForecastRepository : IForecastRepository
             throw;
         }
     }
+    
+    // dphvat po satu
+    public async Task<List<HourlyForecast>> GetHourlyForecastsAsync(
+        short locationId,
+        int days,
+        CancellationToken cancellationToken = default)
+    {
+        var start = DateTime.UtcNow;
+        // danasnji + broj dana
+        var end = start.AddDays(days + 1).Date; // da ukljucimo citav zadnji dan
+
+        var hourlyForecasts = await _context.HourlyForecasts
+            .AsNoTracking()
+            .Where(hourly =>
+                hourly.ForecastFetchId == _context.ForecastFetches
+                    .Where(fetch => fetch.LocationId == locationId
+                                    && fetch.FetchLog != null
+                                    && fetch.FetchLog.StatusCode == 200
+                                    && fetch.HourlyForecasts.Any())
+                    .OrderByDescending(fetch => fetch.FetchedAt)
+                    .Select(fetch => fetch.Id)
+                    .FirstOrDefault()
+                && hourly.ForecastTime >= start
+                && hourly.ForecastTime < end)
+            .OrderBy(hourly => hourly.ForecastTime)
+            .ToListAsync(cancellationToken);
+
+        return hourlyForecasts;
+    }
+
 }

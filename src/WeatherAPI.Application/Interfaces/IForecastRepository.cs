@@ -18,4 +18,6 @@ public interface IForecastRepository
     Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
     Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId, CancellationToken cancellationToken = default);
 
+    Task<List<HourlyForecast>> GetHourlyForecastsAsync(short locationId, int days,
+        CancellationToken cancellationToken = default);
 }

@@ -2,6 +2,7 @@ using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
 using WeatherAPI.Application.Common;
+using WeatherAPI.Domain.Entities;
 
 namespace WeatherAPI.Application.Service;
 
@@ -9,15 +10,20 @@ public class WeatherForecastService : IWeatherForecastService
 {
     private readonly IWeatherForecastApiClient _weatherForecastApiClient;
     private readonly IForecastPersistenceService _forecastPersistenceService;
+    private readonly IForecastRepository _forecastRepository;
 
     public WeatherForecastService(
         IWeatherForecastApiClient weatherForecastApiClient,
-        IForecastPersistenceService forecastPersistenceService)
+        IForecastPersistenceService forecastPersistenceService,
+        IForecastRepository forecastRepository
+        )
     {
         _weatherForecastApiClient = weatherForecastApiClient;
         _forecastPersistenceService = forecastPersistenceService;
+        _forecastRepository = forecastRepository;
     }
 
+    // fetch met api-a i spremanje u bazu
     public async Task<FetchWeatherForecastResponseDto> FetchWeatherForecastAsync(
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default)
@@ -40,6 +46,21 @@ public class WeatherForecastService : IWeatherForecastService
             cancellationToken);
     }
 
+    // dphvat podataka iz baza
+    public async Task<List<HourlyForecast>> GetWeatherForecast(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
+    {
+        if (request.Days < 1 || request.Days > 10)
+            throw new BadRequestException("Days must be between 1 and 10.");
+        if (request.LocationId <= 0)
+            throw new BadRequestException("LocationId must be a positive integer.");
+        
+        var response = await _forecastRepository.
+            GetHourlyForecastsAsync(request.LocationId, request.Days.Value, cancellationToken);
+        
+        return response;
+    }
+    
+    
     private static Coordinates ValidateAndNormalizeCoordinates(FetchWeatherForecastRequestDto request)
     {
         if (request.Latitude is null || request.Longitude is null)
