@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Domain.Entities;
 using WeatherAPI.Infrastructure.Persistence;
@@ -119,7 +120,7 @@ public class ForecastRepository : IForecastRepository
     }
     
     // dphvat po satu
-    public async Task<List<HourlyForecast>> GetHourlyForecastsAsync(
+    public async Task<GetWeatherForecastQueryResultDto?> GetHourlyForecastsAsync(
         short locationId,
         int days,
         CancellationToken cancellationToken = default)
@@ -128,23 +129,55 @@ public class ForecastRepository : IForecastRepository
         // danasnji + broj dana
         var end = start.AddDays(days + 1).Date; // da ukljucimo citav zadnji dan
 
-        var hourlyForecasts = await _context.HourlyForecasts
+        return await _context.ForecastFetches
             .AsNoTracking()
-            .Where(hourly =>
-                hourly.ForecastFetchId == _context.ForecastFetches
-                    .Where(fetch => fetch.LocationId == locationId
-                                    && fetch.FetchLog != null
-                                    && fetch.FetchLog.StatusCode == 200
-                                    && fetch.HourlyForecasts.Any())
-                    .OrderByDescending(fetch => fetch.FetchedAt)
-                    .Select(fetch => fetch.Id)
-                    .FirstOrDefault()
-                && hourly.ForecastTime >= start
-                && hourly.ForecastTime < end)
-            .OrderBy(hourly => hourly.ForecastTime)
+            .Where(fetch => fetch.LocationId == locationId
+                            && fetch.FetchLog != null
+                            && fetch.FetchLog.StatusCode == 200
+                            && fetch.HourlyForecasts.Any())
+            .OrderByDescending(fetch => fetch.FetchedAt)
+            // 
+            .Select(fetch => new GetWeatherForecastQueryResultDto
+            {
+                // dto - koji vraca listu dto responsa i fetchId
+                // fetchId radi citanje unita za drugi query
+                ForecastFetchId = fetch.Id,
+                Items = fetch.HourlyForecasts
+                    .Where(hourly => hourly.ForecastTime >= start
+                                     && hourly.ForecastTime < end)
+                    .OrderBy(hourly => hourly.ForecastTime)
+                    .Select(hourly => new GetWeatherForecastItemDto
+                    {
+                        ForecastTime = hourly.ForecastTime,
+                        AirTemperature = hourly.AirTemperature,
+                        AirPressureAtSeaLevel = hourly.AirPressureAtSeaLevel,
+                        Cloudiness = hourly.Cloudiness,
+                        Humidity = hourly.Humidity,
+                        WindDirection = hourly.WindDirection,
+                        WindSpeed = hourly.WindSpeed,
+                        WeatherSymbol = hourly.WeatherSymbol.Code,
+                        PrecipitationAmount = hourly.PrecipitationAmount
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+    
+    //dohvat unita za fetch
+    public Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitByFetchAsync(int fetchId, CancellationToken cancellationToken = default)
+    {
+        return _context.ForecastFetchUnits
+            .AsNoTracking()
+            .Include(ffu => ffu.Unit)
+            .Include(ffu => ffu.Metric)
+            .Where(ffu => ffu.ForecastFetchId == fetchId )
+            .Select(ffu => new GetWeatherForecastUnitMetaQueryDto
+            {
+                MetricName = ffu.Metric.Name,
+                UnitDisplayName = ffu.Unit.DisplayName,
+                UnitDescription = ffu.Unit.Description
+            })
             .ToListAsync(cancellationToken);
-
-        return hourlyForecasts;
     }
 
 }

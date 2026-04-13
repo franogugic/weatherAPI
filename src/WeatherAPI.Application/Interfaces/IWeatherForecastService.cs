@@ -1,6 +1,5 @@
 using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Models;
-using WeatherAPI.Domain.Entities;
 
 namespace WeatherAPI.Application.Interfaces;
 
@@ -10,7 +9,7 @@ public interface IWeatherForecastService
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default);
 
-    Task<List<HourlyForecast>> GetWeatherForecast(GetWeatherForecastRequestDto request,
+    Task<GetWeatherForecastResponseDto> GetWeatherForecast(GetWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default);
 
 }

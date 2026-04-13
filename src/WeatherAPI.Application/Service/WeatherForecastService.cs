@@ -2,7 +2,6 @@ using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
 using WeatherAPI.Application.Common;
-using WeatherAPI.Domain.Entities;
 
 namespace WeatherAPI.Application.Service;
 
@@ -47,15 +46,34 @@ public class WeatherForecastService : IWeatherForecastService
     }
 
     // dphvat podataka iz baza
-    public async Task<List<HourlyForecast>> GetWeatherForecast(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<GetWeatherForecastResponseDto> GetWeatherForecast(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
     {
         if (request.Days < 1 || request.Days > 10)
             throw new BadRequestException("Days must be between 1 and 10.");
         if (request.LocationId <= 0)
             throw new BadRequestException("LocationId must be a positive integer.");
         
-        var response = await _forecastRepository.
+        var hourlyResponse = await _forecastRepository.
             GetHourlyForecastsAsync(request.LocationId, request.Days.Value, cancellationToken);
+
+        if (hourlyResponse is null)
+        {
+            return new GetWeatherForecastResponseDto();
+        }
+
+        var metaResponse = await _forecastRepository.GetUnitByFetchAsync(hourlyResponse.ForecastFetchId, cancellationToken);
+        
+        var response = new GetWeatherForecastResponseDto
+        {
+            Items = hourlyResponse.Items,
+            Meta = metaResponse.ToDictionary(
+                x => x.MetricName,
+                x => new GetWeatherForecastUnitMetaDto
+                {
+                    UnitDisplayName = x.UnitDisplayName,
+                    UnitDescription = x.UnitDescription
+                })
+        };
         
         return response;
     }
