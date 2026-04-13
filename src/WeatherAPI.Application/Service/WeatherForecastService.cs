@@ -48,20 +48,13 @@ public class WeatherForecastService : IWeatherForecastService
     // dphvat podataka iz baza
     public async Task<GetWeatherForecastResponseDto> GetWeatherForecast(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
     {
-        if (request.Days < 1 || request.Days > 10)
-            throw new BadRequestException("Days must be between 1 and 10.");
-        if (request.LocationId <= 0)
-            throw new BadRequestException("LocationId must be a positive integer.");
-        
         var hourlyResponse = await _forecastRepository.
-            GetHourlyForecastsAsync(request.LocationId, request.Days.Value, cancellationToken);
+            GetHourlyForecastsAsync(request.LocationId, request.Days, cancellationToken);
 
         if (hourlyResponse is null)
-        {
             return new GetWeatherForecastResponseDto();
-        }
 
-        var metaResponse = await _forecastRepository.GetUnitByFetchAsync(hourlyResponse.ForecastFetchId, cancellationToken);
+        var metaResponse = await _forecastRepository.GetUnitsByFetchAsync(hourlyResponse.ForecastFetchId, cancellationToken);
         
         var response = new GetWeatherForecastResponseDto
         {

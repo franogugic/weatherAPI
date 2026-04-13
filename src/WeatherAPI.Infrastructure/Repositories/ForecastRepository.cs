@@ -164,7 +164,7 @@ public class ForecastRepository : IForecastRepository
     }
     
     //dohvat unita za fetch
-    public Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitByFetchAsync(int fetchId, CancellationToken cancellationToken = default)
+    public Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default)
     {
         return _context.ForecastFetchUnits
             .AsNoTracking()

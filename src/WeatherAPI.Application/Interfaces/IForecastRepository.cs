@@ -22,6 +22,6 @@ public interface IForecastRepository
     Task<GetWeatherForecastQueryResultDto?> GetHourlyForecastsAsync(short locationId, int days,
         CancellationToken cancellationToken = default);
     
-    Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitByFetchAsync(int fetchId, CancellationToken cancellationToken = default);
+    Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default);
 
 }
