@@ -23,5 +23,24 @@ public class WeatherForecastController : ControllerBase
         var response = await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
         return Ok(response);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> Get(
+        [FromQuery] GetWeatherForecastRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _weatherForecastService.GetWeatherForecast(request, cancellationToken);
+        return Ok(response);
+    }
+    
+    [HttpDelete]
+    public async Task<IActionResult> Delete(
+        [FromQuery] DeleteForecastFetchRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        await _weatherForecastService.DeleteForecastFetchAsync(request, cancellationToken);
+        return NoContent();
+    }
+    
     
 }

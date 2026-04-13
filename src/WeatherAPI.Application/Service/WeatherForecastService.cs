@@ -9,15 +9,20 @@ public class WeatherForecastService : IWeatherForecastService
 {
     private readonly IWeatherForecastApiClient _weatherForecastApiClient;
     private readonly IForecastPersistenceService _forecastPersistenceService;
+    private readonly IForecastRepository _forecastRepository;
 
     public WeatherForecastService(
         IWeatherForecastApiClient weatherForecastApiClient,
-        IForecastPersistenceService forecastPersistenceService)
+        IForecastPersistenceService forecastPersistenceService,
+        IForecastRepository forecastRepository
+        )
     {
         _weatherForecastApiClient = weatherForecastApiClient;
         _forecastPersistenceService = forecastPersistenceService;
+        _forecastRepository = forecastRepository;
     }
 
+    // fetch met api-a i spremanje u bazu
     public async Task<FetchWeatherForecastResponseDto> FetchWeatherForecastAsync(
         FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken = default)
@@ -40,6 +45,37 @@ public class WeatherForecastService : IWeatherForecastService
             cancellationToken);
     }
 
+    // dphvat podataka iz baza
+    public async Task<GetWeatherForecastResponseDto> GetWeatherForecast(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var hourlyResponse = await _forecastRepository.
+            GetHourlyForecastsAsync(request.LocationId, request.Days, cancellationToken);
+
+        if (hourlyResponse is null)
+            return new GetWeatherForecastResponseDto();
+
+        var metaResponse = await _forecastRepository.GetUnitsByFetchAsync(hourlyResponse.ForecastFetchId, cancellationToken);
+        
+        return new GetWeatherForecastResponseDto
+        {
+            Items = hourlyResponse.Items,
+            Meta = metaResponse.ToDictionary(
+                x => x.MetricName,
+                x => new GetWeatherForecastUnitMetaDto
+                {
+                    UnitDisplayName = x.UnitDisplayName,
+                    UnitDescription = x.UnitDescription
+                })
+        };
+    }
+    
+    public async Task DeleteForecastFetchAsync(DeleteForecastFetchRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var wasDeleted = await _forecastRepository.DeleteForecastFetchAsync(request.FetchId, cancellationToken);
+        if (!wasDeleted)
+            throw new NotFoundException($"Forecast fetch with ID {request.FetchId} was not found.");
+    }
+    
     private static Coordinates ValidateAndNormalizeCoordinates(FetchWeatherForecastRequestDto request)
     {
         if (request.Latitude is null || request.Longitude is null)

@@ -1,3 +1,4 @@
+using WeatherAPI.Application.Dtos;
 using WeatherAPI.Domain.Entities;
 
 namespace WeatherAPI.Application.Interfaces;
@@ -18,4 +19,9 @@ public interface IForecastRepository
     Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
     Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId, CancellationToken cancellationToken = default);
 
+    Task<GetWeatherForecastQueryResultDto?> GetHourlyForecastsAsync(short locationId, int days,
+        CancellationToken cancellationToken = default);
+    
+    Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default);
+    Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default);
 }

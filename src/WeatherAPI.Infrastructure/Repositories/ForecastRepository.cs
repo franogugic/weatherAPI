@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Domain.Entities;
 using WeatherAPI.Infrastructure.Persistence;
@@ -117,4 +118,80 @@ public class ForecastRepository : IForecastRepository
             throw;
         }
     }
+    
+    // dphvat po satu
+    public async Task<GetWeatherForecastQueryResultDto?> GetHourlyForecastsAsync(
+        short locationId,
+        int days,
+        CancellationToken cancellationToken = default)
+    {
+        var start = DateTime.UtcNow;
+        // danasnji + broj dana
+        var end = start.AddDays(days + 1).Date; // da ukljucimo citav zadnji dan
+
+        return await _context.ForecastFetches
+            .AsNoTracking()
+            .Where(fetch => fetch.LocationId == locationId
+                            && fetch.FetchLog != null
+                            && fetch.FetchLog.StatusCode == 200
+                            && fetch.HourlyForecasts.Any())
+            .OrderByDescending(fetch => fetch.FetchedAt)
+            // 
+            .Select(fetch => new GetWeatherForecastQueryResultDto
+            {
+                // dto - koji vraca listu dto responsa i fetchId
+                // fetchId radi citanje unita za drugi query
+                ForecastFetchId = fetch.Id,
+                Items = fetch.HourlyForecasts
+                    .Where(hourly => hourly.ForecastTime >= start
+                                     && hourly.ForecastTime < end)
+                    .OrderBy(hourly => hourly.ForecastTime)
+                    .Select(hourly => new GetWeatherForecastItemDto
+                    {
+                        ForecastTime = hourly.ForecastTime,
+                        AirTemperature = hourly.AirTemperature,
+                        AirPressureAtSeaLevel = hourly.AirPressureAtSeaLevel,
+                        Cloudiness = hourly.Cloudiness,
+                        Humidity = hourly.Humidity,
+                        WindDirection = hourly.WindDirection,
+                        WindSpeed = hourly.WindSpeed,
+                        WeatherSymbol = hourly.WeatherSymbol.Code,
+                        PrecipitationAmount = hourly.PrecipitationAmount
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+    
+    //dohvat unita za fetch
+    public Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default)
+    {
+        return _context.ForecastFetchUnits
+            .AsNoTracking()
+            .Include(ffu => ffu.Unit)
+            .Include(ffu => ffu.Metric)
+            .Where(ffu => ffu.ForecastFetchId == fetchId )
+            .Select(ffu => new GetWeatherForecastUnitMetaQueryDto
+            {
+                MetricName = ffu.Metric.Name,
+                UnitDisplayName = ffu.Unit.DisplayName,
+                UnitDescription = ffu.Unit.Description
+            })
+            .ToListAsync(cancellationToken);
+    }
+    
+    // brisanje fetcha i povezanih tablica
+    public async Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default)
+    {
+        var forecastFetch = await _context.ForecastFetches.FindAsync([fetchId], cancellationToken);
+
+        if (forecastFetch is not null)
+        {
+            _context.ForecastFetches.Remove(forecastFetch);
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        return false;
+    }
+
 }
