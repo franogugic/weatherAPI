@@ -33,5 +33,14 @@ public class WeatherForecastController : ControllerBase
         return Ok(response);
     }
     
+    [HttpDelete]
+    public async Task<IActionResult> Delete(
+        [FromQuery] DeleteForecastFetchRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        await _weatherForecastService.DeleteForecastFetchAsync(request, cancellationToken);
+        return NoContent();
+    }
+    
     
 }

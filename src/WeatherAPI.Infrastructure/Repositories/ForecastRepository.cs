@@ -179,5 +179,19 @@ public class ForecastRepository : IForecastRepository
             })
             .ToListAsync(cancellationToken);
     }
+    
+    // brisanje fetcha i povezanih tablica
+    public async Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default)
+    {
+        var forecastFetch = await _context.ForecastFetches.FindAsync([fetchId], cancellationToken);
+
+        if (forecastFetch is not null)
+        {
+            _context.ForecastFetches.Remove(forecastFetch);
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        return false;
+    }
 
 }

@@ -56,7 +56,7 @@ public class WeatherForecastService : IWeatherForecastService
 
         var metaResponse = await _forecastRepository.GetUnitsByFetchAsync(hourlyResponse.ForecastFetchId, cancellationToken);
         
-        var response = new GetWeatherForecastResponseDto
+        return new GetWeatherForecastResponseDto
         {
             Items = hourlyResponse.Items,
             Meta = metaResponse.ToDictionary(
@@ -67,10 +67,14 @@ public class WeatherForecastService : IWeatherForecastService
                     UnitDescription = x.UnitDescription
                 })
         };
-        
-        return response;
     }
     
+    public async Task DeleteForecastFetchAsync(DeleteForecastFetchRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var wasDeleted = await _forecastRepository.DeleteForecastFetchAsync(request.FetchId, cancellationToken);
+        if (!wasDeleted)
+            throw new NotFoundException($"Forecast fetch with ID {request.FetchId} was not found.");
+    }
     
     private static Coordinates ValidateAndNormalizeCoordinates(FetchWeatherForecastRequestDto request)
     {

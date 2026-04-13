@@ -26,6 +26,19 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 StatusCodes.Status400BadRequest,
                 exception.Message);
         }
+        catch (NotFoundException exception)
+        {
+            logger.LogWarning(
+                exception,
+                "A not found error occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+            
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status404NotFound,
+                exception.Message);
+        }
         catch (Exception exception)
         {
             logger.LogError(

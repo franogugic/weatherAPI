@@ -23,5 +23,5 @@ public interface IForecastRepository
         CancellationToken cancellationToken = default);
     
     Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default);
-
+    Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default);
 }
