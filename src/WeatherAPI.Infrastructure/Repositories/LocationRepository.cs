@@ -22,8 +22,14 @@ public class LocationRepository : ILocationRepository
                 l => l.Latitude == latitude && l.Longitude == longitude && l.Altitude == altitude, cancellationToken);
     }
 
+    public async Task<List<Location?>> GetLocationsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Locations.ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Location location, CancellationToken cancellationToken = default)
     {
         await _context.Locations.AddAsync(location, cancellationToken);  
     }
+    
 }

@@ -2,6 +2,7 @@ using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Models;
 using WeatherAPI.Application.Common;
+using WeatherAPI.Domain.Entities;
 
 namespace WeatherAPI.Application.Service;
 
@@ -10,16 +11,19 @@ public class WeatherForecastService : IWeatherForecastService
     private readonly IWeatherForecastApiClient _weatherForecastApiClient;
     private readonly IForecastPersistenceService _forecastPersistenceService;
     private readonly IForecastRepository _forecastRepository;
+    private readonly ILocationRepository _locationRepository;
 
     public WeatherForecastService(
         IWeatherForecastApiClient weatherForecastApiClient,
         IForecastPersistenceService forecastPersistenceService,
-        IForecastRepository forecastRepository
+        IForecastRepository forecastRepository,
+        ILocationRepository locationRepository
         )
     {
         _weatherForecastApiClient = weatherForecastApiClient;
         _forecastPersistenceService = forecastPersistenceService;
         _forecastRepository = forecastRepository;
+        _locationRepository = locationRepository;
     }
 
     // fetch met api-a i spremanje u bazu
@@ -46,7 +50,7 @@ public class WeatherForecastService : IWeatherForecastService
     }
 
     // dphvat podataka iz baza
-    public async Task<GetWeatherForecastResponseDto> GetWeatherForecast(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<GetWeatherForecastResponseDto> GetWeatherForecastAsync(GetWeatherForecastRequestDto request, CancellationToken cancellationToken = default)
     {
         var hourlyResponse = await _forecastRepository.
             GetHourlyForecastsAsync(request.LocationId, request.Days, cancellationToken);
@@ -75,6 +79,12 @@ public class WeatherForecastService : IWeatherForecastService
         if (!wasDeleted)
             throw new NotFoundException($"Forecast fetch with ID {request.FetchId} was not found.");
     }
+
+    public async Task<List<Location?>> GetLocationsAsync()
+    {
+        return await _locationRepository.GetLocationsAsync();
+    }
+    
     
     private static Coordinates ValidateAndNormalizeCoordinates(FetchWeatherForecastRequestDto request)
     {
