@@ -125,8 +125,16 @@ public class ForecastRepository : IForecastRepository
         int days,
         CancellationToken cancellationToken = default)
     {
-        var start = DateTime.UtcNow;
-        // danasnji + broj dana
+        var now = DateTime.UtcNow;
+        var start = new DateTime(
+            now.Year,
+            now.Month,
+            now.Day,
+            now.Hour,
+            0,
+            0,
+            DateTimeKind.Utc);    
+        Console.WriteLine(start);
         var end = start.AddDays(days + 1).Date; // da ukljucimo citav zadnji dan
 
         return await _context.ForecastFetches
@@ -148,7 +156,7 @@ public class ForecastRepository : IForecastRepository
                     .OrderBy(hourly => hourly.ForecastTime)
                     .Select(hourly => new GetWeatherForecastItemDto
                     {
-                        ForecastTime = hourly.ForecastTime,
+                        ForecastTime = DateTime.SpecifyKind(hourly.ForecastTime, DateTimeKind.Utc),
                         AirTemperature = hourly.AirTemperature,
                         AirPressureAtSeaLevel = hourly.AirPressureAtSeaLevel,
                         Cloudiness = hourly.Cloudiness,

@@ -18,6 +18,19 @@ builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Model.Validation", LogL
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
+
+const string FrontendCorsPolicy = "FrontendCorsPolicy";
+
+builder.Services.AddCors(options => 
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
@@ -54,8 +67,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseCors(FrontendCorsPolicy);
+
 app.UseAuthorization();
 app.MapControllers();
+
 
 app.Run();
 
