@@ -28,24 +28,21 @@ public class WeatherForecastService : IWeatherForecastService
 
     // fetch met api-a i spremanje u bazu
     public async Task<FetchWeatherForecastResponseDto> FetchWeatherForecastAsync(
-        FetchWeatherForecastRequestDto request,
+        Location location,
         CancellationToken cancellationToken = default)
     {
         //pripremanje kooordianta
-        var coordinates = ValidateAndNormalizeCoordinates(request);
- 
         // fetch s MET API-a
         var apiResponse = await _weatherForecastApiClient.FetchForecastAsync(
-            coordinates.Latitude,
-            coordinates.Longitude,
-            request.Altitude,
+            location.Latitude,
+            location.Longitude,
+            location.Altitude,
             cancellationToken);
 
         // spremanje dohvacenih podataka u nasu bazu
         return await _forecastPersistenceService.SaveForecastDataAsync(
             apiResponse,
-            coordinates,
-            request.Altitude,
+            location,
             cancellationToken);
     }
 
@@ -80,21 +77,10 @@ public class WeatherForecastService : IWeatherForecastService
             throw new NotFoundException($"Forecast fetch with ID {request.FetchId} was not found.");
     }
 
-    public async Task<List<Location?>> GetLocationsAsync()
+    public async Task<List<Location>> GetLocationsAsync(CancellationToken cancellationToken = default)
     {
-        return await _locationRepository.GetLocationsAsync();
+        return await _locationRepository.GetLocationsAsync(cancellationToken);
     }
     
     
-    private static Coordinates ValidateAndNormalizeCoordinates(FetchWeatherForecastRequestDto request)
-    {
-        if (request.Latitude is null || request.Longitude is null)
-        {
-            throw new BadRequestException("Latitude and longitude are required.");
-        }
-
-        return new Coordinates(
-            Math.Round(request.Latitude.Value, 6, MidpointRounding.AwayFromZero),
-            Math.Round(request.Longitude.Value, 6, MidpointRounding.AwayFromZero));
-    }
 }

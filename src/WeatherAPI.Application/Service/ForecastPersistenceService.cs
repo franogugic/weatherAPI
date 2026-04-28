@@ -10,24 +10,20 @@ public class ForecastPersistenceService : IForecastPersistenceService
 {
     private const string ForecastResponseType = "compact";
 
-    private readonly ILocationRepository _locationRepository;
     private readonly IForecastRepository _forecastRepository;
     private readonly IForecastReferenceDataService _forecastReferenceDataService;
 
     public ForecastPersistenceService(
-        ILocationRepository locationRepository,
         IForecastRepository forecastRepository,
         IForecastReferenceDataService forecastReferenceDataService)
     {
-        _locationRepository = locationRepository;
         _forecastRepository = forecastRepository;
         _forecastReferenceDataService = forecastReferenceDataService;
     }
 
     public async Task<FetchWeatherForecastResponseDto> SaveForecastDataAsync(
         ForecastApiResponse apiResponse,
-        Coordinates coordinates,
-        short? altitude,
+        Location location,
         CancellationToken cancellationToken = default)
     {
         FetchWeatherForecastResponseDto? response = null;
@@ -36,12 +32,6 @@ public class ForecastPersistenceService : IForecastPersistenceService
         await _forecastRepository.ExecuteInTransactionAsync(
             async transactionCancellationToken =>
             {
-                var location = await GetOrCreateLocationAsync(
-                    coordinates.Latitude,
-                    coordinates.Longitude,
-                    altitude,
-                    transactionCancellationToken);
-
                 // ako met api nije vratio response
                 if (apiResponse.ForecastResponse is null)
                 {
@@ -98,24 +88,7 @@ public class ForecastPersistenceService : IForecastPersistenceService
 
         return response ?? throw new InvalidOperationException("Forecast save flow did not produce a response.");
     }
-
-    private async Task<Location> GetOrCreateLocationAsync(
-        decimal latitude,
-        decimal longitude,
-        short? altitude,
-        CancellationToken cancellationToken)
-    {
-        var location = await _locationRepository.GetLocationAsync(latitude, longitude, altitude, cancellationToken);
-        if (location is not null)
-        {
-            return location;
-        }
-
-        location = Location.Create(latitude, longitude, altitude);
-        await _locationRepository.AddAsync(location, cancellationToken);
-        return location;
-    }
-
+    
     // ako podaci nisu promjenji od zadnjeg req za tu lokaciju
     private async Task<bool> HasUnchangedForecastDataAsync(
         short locationId,
