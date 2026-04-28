@@ -134,7 +134,6 @@ public class ForecastRepository : IForecastRepository
             0,
             0,
             DateTimeKind.Utc);    
-        Console.WriteLine(start);
         var end = start.AddDays(days + 1).Date; // da ukljucimo citav zadnji dan
 
         return await _context.ForecastFetches

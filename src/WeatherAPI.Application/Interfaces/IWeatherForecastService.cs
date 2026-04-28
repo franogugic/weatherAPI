@@ -15,6 +15,6 @@ public interface IWeatherForecastService
     
     Task DeleteForecastFetchAsync(DeleteForecastFetchRequestDto request, CancellationToken cancellationToken = default);
 
-    Task<List<Location?>> GetLocationsAsync();
+    Task<List<Location?>> GetLocationsAsync(CancellationToken cancellationToken = default);
 
 }

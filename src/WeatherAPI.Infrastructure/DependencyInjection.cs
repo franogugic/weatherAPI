@@ -44,6 +44,8 @@ public static class DependencyInjection
             .Validate(options => options.RetryDelayMilliseconds >= 0, "WeatherApi:RetryDelayMilliseconds must be 0 or greater.")
             .ValidateOnStart();
 
+        services.AddHostedService<ForecastFetchBackgroundService>();
+        
         services.AddTransient<RetryOnTransientFailureHandler>();
         services.AddTransient<TimeoutPerAttemptHandler>();
 

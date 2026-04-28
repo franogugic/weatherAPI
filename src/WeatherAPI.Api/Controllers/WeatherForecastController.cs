@@ -15,7 +15,10 @@ public class WeatherForecastController : ControllerBase
         _weatherForecastService = weatherForecastService;
     }
     
-    [HttpPost]
+    /*
+     Ne treba nam ako imamo background service priko kojeg cemo fetchat podatke za sve lokacije??? 
+     ----------------------------------------------------------------------------------------------
+     [HttpPost]
     public async Task<IActionResult> Fetch(
         [FromBody] FetchWeatherForecastRequestDto request,
         CancellationToken cancellationToken)
@@ -23,7 +26,7 @@ public class WeatherForecastController : ControllerBase
         var response = await _weatherForecastService.FetchWeatherForecastAsync(request, cancellationToken);
         return Ok(response);
     }
-
+    */
     [HttpGet]
     public async Task<IActionResult> Get(
         [FromQuery] GetWeatherForecastRequestDto request,

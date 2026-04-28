@@ -80,9 +80,9 @@ public class WeatherForecastService : IWeatherForecastService
             throw new NotFoundException($"Forecast fetch with ID {request.FetchId} was not found.");
     }
 
-    public async Task<List<Location?>> GetLocationsAsync()
+    public async Task<List<Location?>> GetLocationsAsync(CancellationToken cancellationToken = default)
     {
-        return await _locationRepository.GetLocationsAsync();
+        return await _locationRepository.GetLocationsAsync(cancellationToken);
     }
     
     
