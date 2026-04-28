@@ -47,27 +47,22 @@ public class ForecastFetchBackgroundService : BackgroundService
                 try
                 {
                     await weatherForecastService.FetchWeatherForecastAsync(
-                        new FetchWeatherForecastRequestDto
-                        {
-                            Latitude = location?.Latitude,
-                            Longitude = location?.Longitude,
-                            Altitude = location?.Altitude
-                        },
+                        location,
                         stoppingToken);
                     _logger.LogInformation(
                         "Successfully fetched forecast for location with latitude {Latitude}, longitude {Longitude}, altitude {Altitude}.",
-                        location?.Latitude,
-                        location?.Longitude,
-                        location?.Altitude);
+                        location.Latitude,
+                        location.Longitude,
+                        location.Altitude);
                 }
                 catch (Exception exception)
                 {
                     _logger.LogError(
                         exception,
                         "Forecast fetch failed for location with latitude {Latitude}, longitude {Longitude}, altitude {Altitude}.",
-                        location?.Latitude,
-                        location?.Longitude,
-                        location?.Altitude);
+                        location.Latitude,
+                        location.Longitude,
+                        location.Altitude);
                 }
             }
         }

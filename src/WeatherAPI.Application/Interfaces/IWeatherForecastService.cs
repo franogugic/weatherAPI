@@ -7,7 +7,7 @@ namespace WeatherAPI.Application.Interfaces;
 public interface IWeatherForecastService
 {
     Task<FetchWeatherForecastResponseDto> FetchWeatherForecastAsync(
-        FetchWeatherForecastRequestDto request,
+        Location location,
         CancellationToken cancellationToken = default);
 
     Task<GetWeatherForecastResponseDto> GetWeatherForecastAsync(GetWeatherForecastRequestDto request,
@@ -15,6 +15,6 @@ public interface IWeatherForecastService
     
     Task DeleteForecastFetchAsync(DeleteForecastFetchRequestDto request, CancellationToken cancellationToken = default);
 
-    Task<List<Location?>> GetLocationsAsync(CancellationToken cancellationToken = default);
+    Task<List<Location>> GetLocationsAsync(CancellationToken cancellationToken = default);
 
 }
