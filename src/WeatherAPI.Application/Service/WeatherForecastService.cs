@@ -81,6 +81,11 @@ public class WeatherForecastService : IWeatherForecastService
     {
         return await _locationRepository.GetLocationsAsync(cancellationToken);
     }
+
+    public async Task<List<GetLocationResponseDto>> GetLocationsWithCurrentWeatherAsync(CancellationToken cancellationToken = default)
+    {
+        return await _locationRepository.GetLocationsWithCurrentWeatherAsync(cancellationToken);
+    }
     
     
 }
