@@ -1,0 +1,9 @@
+using WeatherAPI.Domain.Entities;
+
+namespace WeatherAPI.Application.Interfaces;
+
+public interface IUserRepository
+{
+    Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<User> AddAsync(User user, CancellationToken cancellationToken);
+}
