@@ -5,4 +5,5 @@ namespace WeatherAPI.Application.Interfaces;
 public interface IAuthService
 {
     Task<RegisterUserResponseDto> RegisterAsync(RegisterUserRequestDto request, CancellationToken cancellationToken);
+    Task<LoginUserResultDto> LoginAsync(LoginUserRequestDto request, CancellationToken cancellationToken);
 }

@@ -10,12 +10,15 @@ public class User
 
     private User(string firstName, string lastName, string email, string passwordHash, UserRole role)
     {
+        var now = DateTime.UtcNow;
+
         FirstName = firstName;
         LastName = lastName;
         Email = email;
         PasswordHash = passwordHash;
         Role = role;
-        CreatedAt = DateTime.UtcNow;
+        CreatedAt = now;
+        UpdatedAt = now;
     }
     
     public int Id { get; private set; }
