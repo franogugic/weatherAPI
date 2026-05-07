@@ -7,15 +7,14 @@ public class UserPreference
     }
 
     private UserPreference(
-        User user,
+        int userId,
         string temperatureUnit,
         string windSpeedUnit,
         string pressureUnit,
         string cloudinessUnit,
         string precipitationUnit)
     {
-        User = user;
-        UserId = user.Id;
+        UserId = userId;
         TemperatureUnit = temperatureUnit;
         WindSpeedUnit = windSpeedUnit;
         PressureUnit = pressureUnit;
@@ -35,7 +34,7 @@ public class UserPreference
     public User User { get; private set; } = null!;
 
     public static UserPreference Create(
-        User user,
+        int userId,
         string temperatureUnit,
         string windSpeedUnit,
         string pressureUnit,
@@ -43,7 +42,7 @@ public class UserPreference
         string precipitationUnit)
     {
         return new UserPreference(
-            user,
+            userId,
             temperatureUnit,
             windSpeedUnit,
             pressureUnit,
