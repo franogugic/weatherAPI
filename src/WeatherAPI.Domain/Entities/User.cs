@@ -31,7 +31,7 @@ public class User
     
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
     
-    //public UserPreference? Preference { get; private set; }
+    public UserPreference? Preference { get; private set; }
     //public ICollection<UserFavoriteLocation> FavoriteLocations { get; private set; } = new List<UserFavoriteLocation>();
 
     public static User Create(

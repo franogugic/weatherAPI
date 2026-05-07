@@ -338,6 +338,57 @@ namespace WeatherAPI.Infrastructure.Migrations
                     b.ToTable("AppUser", (string)null);
                 });
 
+            modelBuilder.Entity("WeatherAPI.Domain.Entities.UserPreference", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("CloudinessUnit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("cloudiness_unit");
+
+                    b.Property<string>("PrecipitationUnit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("precipitation_unit");
+
+                    b.Property<string>("PressureUnit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("pressure_unit");
+
+                    b.Property<string>("TemperatureUnit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("temperature_unit");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2(0)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("WindSpeedUnit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("wind_speed_unit");
+
+                    b.HasKey("UserId")
+                        .HasName("PK_UserPreference");
+
+                    b.ToTable("UserPreference", (string)null);
+                });
+
             modelBuilder.Entity("WeatherAPI.Domain.Entities.UserSession", b =>
                 {
                     b.Property<int>("Id")
@@ -482,6 +533,18 @@ namespace WeatherAPI.Infrastructure.Migrations
                     b.Navigation("WeatherSymbol");
                 });
 
+            modelBuilder.Entity("WeatherAPI.Domain.Entities.UserPreference", b =>
+                {
+                    b.HasOne("WeatherAPI.Domain.Entities.User", "User")
+                        .WithOne("Preference")
+                        .HasForeignKey("WeatherAPI.Domain.Entities.UserPreference", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserPreference_AppUser_UserId");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WeatherAPI.Domain.Entities.UserSession", b =>
                 {
                     b.HasOne("WeatherAPI.Domain.Entities.User", "User")
@@ -516,6 +579,11 @@ namespace WeatherAPI.Infrastructure.Migrations
             modelBuilder.Entity("WeatherAPI.Domain.Entities.Unit", b =>
                 {
                     b.Navigation("ForecastFetchUnits");
+                });
+
+            modelBuilder.Entity("WeatherAPI.Domain.Entities.User", b =>
+                {
+                    b.Navigation("Preference");
                 });
 
             modelBuilder.Entity("WeatherAPI.Domain.Entities.WeatherSymbol", b =>
