@@ -23,6 +23,21 @@ public class UserPreference
         UpdatedAt = DateTime.UtcNow;
     }
     
+    private UserPreference(
+        string temperatureUnit,
+        string windSpeedUnit,
+        string pressureUnit,
+        string cloudinessUnit,
+        string precipitationUnit)
+    {
+        TemperatureUnit = temperatureUnit;
+        WindSpeedUnit = windSpeedUnit;
+        PressureUnit = pressureUnit;
+        CloudinessUnit = cloudinessUnit;
+        PrecipitationUnit = precipitationUnit;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
     public int UserId { get; private set; }
     public string TemperatureUnit { get; private set; } = string.Empty;
     public string WindSpeedUnit { get; private set; } = string.Empty;

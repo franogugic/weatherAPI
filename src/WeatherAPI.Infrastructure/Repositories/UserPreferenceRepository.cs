@@ -23,6 +23,17 @@ public class UserPreferenceRepository : IUserPreferenceRepository
     public async Task AddAsync(UserPreference userPreference, CancellationToken cancellationToken = default)
     {
         await _context.UserPreferences.AddAsync(userPreference, cancellationToken);
+        await SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(UserPreference userPreference, CancellationToken cancellationToken = default)
+    {
+        _context.UserPreferences.Update(userPreference);
+        await SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

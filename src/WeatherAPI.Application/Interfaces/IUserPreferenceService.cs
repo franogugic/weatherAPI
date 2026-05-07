@@ -8,4 +8,9 @@ public interface IUserPreferenceService
     Task<GetUserPreferenceResponseDto> GetCurrentUserPreferencesAsync(
         string sessionToken,
         CancellationToken cancellationToken = default);
+
+    Task<GetUserPreferenceResponseDto> UpdateCurrentUserPreferencesAsync(
+        string sessionToken,
+        UpdateUserPreferenceRequestDto request,
+        CancellationToken cancellationToken = default);
 }
