@@ -93,6 +93,27 @@ public class AuthService : IAuthService
             ExpiresAt = expiresAt
         };
     }
+
+    public async Task<CurrentUserResponseDto> GetCurrentUserAsync(string sessionToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+            throw new UnauthorizedAccessException("User is not authenticated");
+        
+        var hashedSessionToken = HashSessionToken(sessionToken);
+        var session = await _userSessionRepository.GetByTokenAsync(hashedSessionToken, cancellationToken);
+
+        if (session is null || !session.IsActive())
+            throw new UnauthorizedAccessException("Invalid or expired session");
+        
+        return new CurrentUserResponseDto
+        {
+            Id = session.User.Id,
+            FirstName = session.User.FirstName,
+            LastName = session.User.LastName,
+            Email = session.User.Email,
+            Role = session.User.Role
+        };
+    }
     
     private static void ValidatePassword(string password)
     {

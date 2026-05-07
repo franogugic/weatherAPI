@@ -44,4 +44,16 @@ public class AuthController : ControllerBase
 
         return Ok(response.User);
     }
+    
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
+    {
+        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
+        
+        if (string.IsNullOrWhiteSpace(sessionToken))
+            throw new UnauthorizedAccessException("User is not authenticated");
+        
+        var response = await _authService.GetCurrentUserAsync(sessionToken, cancellationToken);
+        return Ok(response);
+    }
 }

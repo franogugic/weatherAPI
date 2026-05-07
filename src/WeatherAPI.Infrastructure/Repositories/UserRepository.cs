@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
+using WeatherAPI.Application.Common;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Domain.Entities;
 using WeatherAPI.Infrastructure.Persistence;
@@ -30,8 +32,20 @@ public class UserRepository : IUserRepository
     public async Task<User> AddAsync(User user,
         CancellationToken cancellationToken = default)
     {
-        await _context.Users.AddAsync(user, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken); 
-        return user;
+        try
+        {
+            await _context.Users.AddAsync(user, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            return user;
+        }
+        catch (DbUpdateException exception) when (IsUniqueConstraintViolation(exception))
+        {
+            throw new ConflictException("Email already exists");
+        }
+    }
+    
+    private static bool IsUniqueConstraintViolation(DbUpdateException exception)
+    {
+        return exception.InnerException is SqlException { Number: 2601 or 2627 };
     }
 }

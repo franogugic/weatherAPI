@@ -33,8 +33,9 @@ public class UserSession
         RevokedAt = DateTime.UtcNow;
     }
     
-    public bool IsActive(DateTime now)
+    public bool IsActive()
     {
+        var now = DateTime.UtcNow;
         return RevokedAt is null && ExpiresAt > now;
     }
 }
