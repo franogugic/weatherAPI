@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using WeatherAPI.Application.Configuration;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Application.Service;
 using WeatherAPI.Infrastructure.Configuration;
@@ -44,6 +45,12 @@ public static class DependencyInjection
             .Validate(options => options.RetryDelayMilliseconds >= 0, "WeatherApi:RetryDelayMilliseconds must be 0 or greater.")
             .ValidateOnStart();
 
+        services.AddOptions<AuthOptions>()
+            .Bind(configuration.GetSection(AuthOptions.SectionName))
+            .Validate(options => options.SessionDurationDays > 0, "Auth:SessionDurationDays must be greater than 0.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.SessionCookieName), "Auth:SessionCookieName is required.")
+            .ValidateOnStart();
+
         services.AddHostedService<ForecastFetchBackgroundService>();
         
         services.AddTransient<RetryOnTransientFailureHandler>();
@@ -62,6 +69,9 @@ public static class DependencyInjection
         services.AddScoped<IForecastReferenceDataService, ForecastReferenceDataService>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<IForecastRepository, ForecastRepository>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserSessionRepository, UserSessionRepository>();
 
         return services;
     }

@@ -13,6 +13,8 @@ public class WeatherDbContext(DbContextOptions<WeatherDbContext> options) : DbCo
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<WeatherSymbol> WeatherSymbols => Set<WeatherSymbol>();
     public DbSet<ForecastFetchUnit> ForecastFetchUnits => Set<ForecastFetchUnit>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

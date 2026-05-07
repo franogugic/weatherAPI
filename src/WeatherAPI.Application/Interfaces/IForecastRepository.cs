@@ -17,11 +17,11 @@ public interface IForecastRepository
     Task AddHourlyForecastsAsync(IEnumerable<HourlyForecast> hourlyForecasts, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
     Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
-    Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId, CancellationToken cancellationToken = default);
-
     Task<GetWeatherForecastQueryResultDto?> GetHourlyForecastsAsync(short locationId, int days,
         CancellationToken cancellationToken = default);
-    
+
+    Task<bool> HasSameUpdatedAtAsync(short locationId,
+        DateTime updatedAt, CancellationToken cancellationToken = default);
     Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default);
     Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default);
 }

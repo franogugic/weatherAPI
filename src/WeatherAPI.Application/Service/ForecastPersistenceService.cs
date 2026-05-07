@@ -90,16 +90,12 @@ public class ForecastPersistenceService : IForecastPersistenceService
     }
     
     // ako podaci nisu promjenji od zadnjeg req za tu lokaciju
-    private async Task<bool> HasUnchangedForecastDataAsync(
+    private Task<bool> HasUnchangedForecastDataAsync(
         short locationId,
         DateTime updatedAt,
         CancellationToken cancellationToken)
     {
-        var latestFetch = await _forecastRepository.GetLatestFetchByLocationAsync(locationId, cancellationToken);
-        return latestFetch is not null 
-               && latestFetch.UpdatedAt == updatedAt 
-               && latestFetch.FetchLog is not null
-               && latestFetch.FetchLog.StatusCode == 200;
+        return _forecastRepository.HasSameUpdatedAtAsync(locationId, updatedAt, cancellationToken);
     }
 
     // u slucaju da met api nije vratio forecast response, ali je dohvacanje bilo uspjesno, spremamo samo fetch i log tog pokusaja

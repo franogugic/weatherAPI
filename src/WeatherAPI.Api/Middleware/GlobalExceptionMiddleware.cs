@@ -33,10 +33,36 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 "A not found error occurred for {Method} {Path}.",
                 context.Request.Method,
                 context.Request.Path);
-            
+
             await WriteErrorResponseAsync(
                 context,
                 StatusCodes.Status404NotFound,
+                exception.Message);
+        }
+        catch (ConflictException exception)
+        {
+            logger.LogWarning(
+                exception,
+                "A conflict error occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status409Conflict,
+                exception.Message);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            logger.LogWarning(
+                exception,
+                "An unauthorized access error occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status401Unauthorized,
                 exception.Message);
         }
         catch (Exception exception)

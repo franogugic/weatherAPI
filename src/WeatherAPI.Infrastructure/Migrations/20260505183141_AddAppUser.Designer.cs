@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WeatherAPI.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using WeatherAPI.Infrastructure.Persistence;
 namespace WeatherAPI.Infrastructure.Migrations
 {
     [DbContext(typeof(WeatherDbContext))]
-    partial class WeatherDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505183141_AddAppUser")]
+    partial class AddAppUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -338,51 +341,6 @@ namespace WeatherAPI.Infrastructure.Migrations
                     b.ToTable("AppUser", (string)null);
                 });
 
-            modelBuilder.Entity("WeatherAPI.Domain.Entities.UserSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2(0)")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2(0)")
-                        .HasColumnName("expires_at");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2(0)")
-                        .HasColumnName("revoked_at");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(64)")
-                        .HasColumnName("token_hash");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("PK_UserSession");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("UQ_UserSession_TokenHash");
-
-                    b.HasIndex("UserId", "ExpiresAt")
-                        .HasDatabaseName("IX_UserSession_UserId_ExpiresAt");
-
-                    b.ToTable("UserSession", (string)null);
-                });
-
             modelBuilder.Entity("WeatherAPI.Domain.Entities.WeatherSymbol", b =>
                 {
                     b.Property<byte>("Id")
@@ -480,18 +438,6 @@ namespace WeatherAPI.Infrastructure.Migrations
                     b.Navigation("ForecastFetch");
 
                     b.Navigation("WeatherSymbol");
-                });
-
-            modelBuilder.Entity("WeatherAPI.Domain.Entities.UserSession", b =>
-                {
-                    b.HasOne("WeatherAPI.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_UserSession_AppUser_UserId");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WeatherAPI.Domain.Entities.ForecastFetch", b =>

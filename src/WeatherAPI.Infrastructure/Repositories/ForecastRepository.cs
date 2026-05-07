@@ -88,17 +88,18 @@ public class ForecastRepository : IForecastRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    // posljednji fetch za lokaciju
-    public async Task<ForecastFetch?> GetLatestFetchByLocationAsync(short locationId,
-        CancellationToken cancellationToken = default)
+    //provjera jesu li novi pdoaci isti ko stari
+    public async Task<bool> HasSameUpdatedAtAsync(short locationId,
+        DateTime updatedAt, CancellationToken cancellationToken = default)
     {
         return await _context.ForecastFetches
-            .AsNoTracking()
-            .Include(forecastFetch => forecastFetch.FetchLog)
-            .Where(fetch => fetch.LocationId == locationId)
-            .OrderByDescending(fetch => fetch.FetchedAt)
-            .FirstOrDefaultAsync(cancellationToken);
+            .AnyAsync(forecastFetch =>
+                    forecastFetch.LocationId == locationId &&
+                    forecastFetch.UpdatedAt == updatedAt,
+                cancellationToken);
     }
+
+    
 
     //transakcija
     public async Task ExecuteInTransactionAsync(

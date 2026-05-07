@@ -48,7 +48,7 @@ public class WeatherForecastController : ControllerBase
     [HttpGet("locations")]
     public async Task<IActionResult> GetAllLocationsAsync(CancellationToken cancellationToken)
     {
-        var response = await _weatherForecastService.GetLocationsAsync();
+        var response = await _weatherForecastService.GetLocationsWithCurrentWeatherAsync(cancellationToken);
         return Ok(response);
     }
     
