@@ -31,7 +31,7 @@ public class AuthService : IAuthService
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var doesExist = await _userRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken);
         if (doesExist)
-            throw new BadRequestException("Email already exists");
+            throw new ConflictException("Email already exists");
         
         // check sifre
         ValidatePassword(request.Password);
