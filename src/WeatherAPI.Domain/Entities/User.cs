@@ -28,10 +28,9 @@ public class User
     public string PasswordHash { get; private set; } = string.Empty;
     public UserRole Role { get; private set; } = UserRole.User;
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
-    
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
     
-    //public UserPreference? Preference { get; private set; }
+    public UserPreference? Preference { get; private set; }
     //public ICollection<UserFavoriteLocation> FavoriteLocations { get; private set; } = new List<UserFavoriteLocation>();
 
     public static User Create(
