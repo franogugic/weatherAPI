@@ -46,7 +46,7 @@ public class UserFavoriteLocationController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
-    [HttpDelete("{locationId:short}")]
+    [HttpDelete("{locationId}")]
     public async Task<IActionResult> RemoveFavoriteLocation(
         short locationId,
         CancellationToken cancellationToken)
