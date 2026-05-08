@@ -23,6 +23,13 @@ public class LocationRepository : ILocationRepository
                 l => l.Latitude == latitude && l.Longitude == longitude && l.Altitude == altitude, cancellationToken);
     }
 
+    public async Task<Location?> GetByIdAsync(short locationId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Locations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(location => location.Id == locationId, cancellationToken);
+    }
+
     public async Task<List<Location>> GetLocationsAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Locations
