@@ -23,10 +23,7 @@ public class UserPreferenceController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetUserPreference(CancellationToken cancellationToken)
     {
-        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
-        if (string.IsNullOrWhiteSpace(sessionToken))   
-            throw new UnauthorizedAccessException("User is not authenticated");
-        
+        var sessionToken = GetSessionToken();
         var response = await _userPreferenceService.GetCurrentUserPreferencesAsync(sessionToken, cancellationToken);
         return Ok(response);
     }
@@ -34,13 +31,18 @@ public class UserPreferenceController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> UpdateUserPreference([FromBody] UpdateUserPreferenceRequestDto request,CancellationToken cancellationToken)
     {
-        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
-        if (string.IsNullOrWhiteSpace(sessionToken))   
-            throw new UnauthorizedAccessException("User is not authenticated");
-        
+        var sessionToken = GetSessionToken();
         var response = await _userPreferenceService.UpdateCurrentUserPreferencesAsync(sessionToken, request, cancellationToken);
         return Ok(response); 
     }
-    
-    
+
+    private string GetSessionToken()
+    {
+        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
+
+        if (string.IsNullOrWhiteSpace(sessionToken))
+            throw new UnauthorizedAccessException("User is not authenticated");
+
+        return sessionToken;
+    }
 }

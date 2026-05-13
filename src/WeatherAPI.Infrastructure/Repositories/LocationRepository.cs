@@ -23,6 +23,13 @@ public class LocationRepository : ILocationRepository
                 l => l.Latitude == latitude && l.Longitude == longitude && l.Altitude == altitude, cancellationToken);
     }
 
+    public async Task<Location?> GetByIdAsync(short locationId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Locations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(location => location.Id == locationId, cancellationToken);
+    }
+
     public async Task<List<Location>> GetLocationsAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Locations
@@ -33,9 +40,29 @@ public class LocationRepository : ILocationRepository
 
     public async Task<List<GetLocationResponseDto>> GetLocationsWithCurrentWeatherAsync(CancellationToken cancellationToken = default)
     {
+        return await GetLocationsWithCurrentWeatherQuery()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<GetLocationResponseDto>> GetLocationsWithCurrentWeatherAsync(
+        IEnumerable<short> locationIds,
+        CancellationToken cancellationToken = default)
+    {
+        var locationIdList = locationIds.ToList();
+
+        if (locationIdList.Count == 0)
+            return [];
+
+        return await GetLocationsWithCurrentWeatherQuery()
+            .Where(location => locationIdList.Contains(location.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    private IQueryable<GetLocationResponseDto> GetLocationsWithCurrentWeatherQuery()
+    {
         var now = DateTime.UtcNow;
 
-        return await _context.Locations
+        return _context.Locations
             .AsNoTracking()
             .Select(location => new GetLocationResponseDto
             {
@@ -61,8 +88,7 @@ public class LocationRepository : ILocationRepository
                             WeatherSymbol = hourly.WeatherSymbol != null ? hourly.WeatherSymbol.Code : null
                         }))
                     .FirstOrDefault()
-            })
-            .ToListAsync(cancellationToken);
+            });
     }
 
     public async Task AddAsync(Location location, CancellationToken cancellationToken = default)

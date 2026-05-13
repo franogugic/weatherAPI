@@ -16,6 +16,7 @@ public class WeatherDbContext(DbContextOptions<WeatherDbContext> options) : DbCo
     public DbSet<User> Users => Set<User>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
+    public DbSet<UserFavoriteLocation> UserFavoriteLocations => Set<UserFavoriteLocation>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

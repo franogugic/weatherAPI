@@ -74,6 +74,8 @@ public static class DependencyInjection
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IUserPreferenceService, UserPreferenceService>();
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
+        services.AddScoped<IUserFavoriteLocationService, UserFavoriteLocationService>();
+        services.AddScoped<IUserFavoriteLocationRepository, UserFavoriteLocationRepository>();
 
         return services;
     }

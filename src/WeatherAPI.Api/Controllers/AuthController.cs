@@ -39,6 +39,7 @@ public class AuthController : ControllerBase
                 HttpOnly = true,
                 Secure = _authOptions.CookieSecure,
                 SameSite = SameSiteMode.Lax,
+                Path = "/",
                 Expires = response.ExpiresAt
             });
 
@@ -55,5 +56,25 @@ public class AuthController : ControllerBase
         
         var response = await _authService.GetCurrentUserAsync(sessionToken, cancellationToken);
         return Ok(response);
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
+        await _authService.LogoutAsync(sessionToken, cancellationToken);
+        
+        Response.Cookies.Delete(
+            _authOptions.SessionCookieName,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = _authOptions.CookieSecure,
+                SameSite = SameSiteMode.Lax,
+                Path = "/"
+            });
+        Response.Cookies.Delete(_authOptions.SessionCookieName);
+
+        return NoContent();
     }
 }

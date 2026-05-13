@@ -114,6 +114,15 @@ public class AuthService : IAuthService
             Role = session.User.Role
         };
     }
+
+    public async Task LogoutAsync(string? sessionToken, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+            return;
+
+        var hashedSessionToken = HashSessionToken(sessionToken);
+        await _userSessionRepository.RevokeByTokenAsync(hashedSessionToken, cancellationToken);
+    }
     
     private static void ValidatePassword(string password)
     {

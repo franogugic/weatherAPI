@@ -8,4 +8,5 @@ public interface IAuthService
     Task<LoginUserResultDto> LoginAsync(LoginUserRequestDto request, CancellationToken cancellationToken);
 
     Task<CurrentUserResponseDto> GetCurrentUserAsync(string sessionToken, CancellationToken cancellationToken);
+    Task LogoutAsync(string? sessionToken, CancellationToken cancellationToken);
 }
