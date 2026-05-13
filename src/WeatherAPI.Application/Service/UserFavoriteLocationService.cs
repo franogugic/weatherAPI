@@ -27,9 +27,11 @@ public class UserFavoriteLocationService : IUserFavoriteLocationService
         var user = await _authService.GetCurrentUserAsync(sessionToken, cancellationToken);
         
         var favoriteLocations = await _userFavoriteLocationRepository.GetByUserIdAsync(user.Id, cancellationToken);
-        return favoriteLocations
-            .Select(favorite => MapToResponse(favorite.Location))
-            .ToList();
+        var favoriteLocationIds = favoriteLocations.Select(favorite => favorite.LocationId);
+
+        return await _locationRepository.GetLocationsWithCurrentWeatherAsync(
+            favoriteLocationIds,
+            cancellationToken);
     }
 
     public async Task<GetLocationResponseDto> AddCurrentUserFavoriteLocationAsync(
@@ -54,7 +56,11 @@ public class UserFavoriteLocationService : IUserFavoriteLocationService
         var favoriteLocation = UserFavoriteLocation.Create(user.Id, locationId);
         await _userFavoriteLocationRepository.AddAsync(favoriteLocation, cancellationToken);
 
-        return MapToResponse(location);
+        return (await _locationRepository.GetLocationsWithCurrentWeatherAsync(
+                [locationId],
+                cancellationToken))
+            .FirstOrDefault()
+            ?? MapToResponse(location);
     }
 
     public async Task RemoveCurrentUserFavoriteLocationAsync(

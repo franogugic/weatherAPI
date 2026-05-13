@@ -10,5 +10,8 @@ public interface ILocationRepository
     Task<Location?> GetByIdAsync(short locationId, CancellationToken cancellationToken = default);
     Task<List<Location>> GetLocationsAsync(CancellationToken cancellationToken = default);
     Task<List<GetLocationResponseDto>> GetLocationsWithCurrentWeatherAsync(CancellationToken cancellationToken = default);
+    Task<List<GetLocationResponseDto>> GetLocationsWithCurrentWeatherAsync(
+        IEnumerable<short> locationIds,
+        CancellationToken cancellationToken = default);
     Task AddAsync(Location location, CancellationToken cancellationToken = default);
 }
