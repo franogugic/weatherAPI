@@ -46,5 +46,23 @@ public class LocationConfiguration : IEntityTypeConfiguration<Location>
             .WithOne(forecastFetch => forecastFetch.Location)
             .HasForeignKey(forecastFetch => forecastFetch.LocationId)
             .HasConstraintName("FK_ForecastFetch_Location");
+
+        builder.HasData(
+            new
+            {
+                Id = (short)1,
+                Name = "Maksimir stadion, Zagreb",
+                Latitude = 45.818611m,
+                Longitude = 16.016389m,
+                Altitude = (short?)122
+            },
+            new
+            {
+                Id = (short)2,
+                Name = "Dubrava, Siroki Brijeg",
+                Latitude = 43.366700m,
+                Longitude = 17.623300m,
+                Altitude = (short?)272
+            });
     }
 }
