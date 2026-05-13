@@ -27,4 +27,16 @@ public class UserSessionRepository : IUserSessionRepository
             .Include(session => session.User)
             .FirstOrDefaultAsync(session => session.TokenHash == token, cancellationToken);
     }
+
+    public async Task RevokeByTokenAsync(string tokenHash, CancellationToken cancellationToken = default)
+    {
+        var session = await _context.UserSessions
+            .FirstOrDefaultAsync(session => session.TokenHash == tokenHash, cancellationToken);
+
+        if (session is null || session.RevokedAt is not null)
+            return;
+
+        session.Revoke();
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

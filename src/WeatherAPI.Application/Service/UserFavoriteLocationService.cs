@@ -82,7 +82,7 @@ public class UserFavoriteLocationService : IUserFavoriteLocationService
             Name = location.Name,
             Latitude = location.Latitude,
             Longitude = location.Longitude,
-            Altitude = location.Altitude
+            Altitude = location.Altitude,
         };
     }
 }
