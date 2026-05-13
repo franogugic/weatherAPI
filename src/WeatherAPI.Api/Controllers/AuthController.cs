@@ -39,6 +39,7 @@ public class AuthController : ControllerBase
                 HttpOnly = true,
                 Secure = _authOptions.CookieSecure,
                 SameSite = SameSiteMode.Lax,
+                Path = "/",
                 Expires = response.ExpiresAt
             });
 
@@ -69,8 +70,10 @@ public class AuthController : ControllerBase
             {
                 HttpOnly = true,
                 Secure = _authOptions.CookieSecure,
-                SameSite = SameSiteMode.Lax
+                SameSite = SameSiteMode.Lax,
+                Path = "/"
             });
+        Response.Cookies.Delete(_authOptions.SessionCookieName);
 
         return NoContent();
     }
