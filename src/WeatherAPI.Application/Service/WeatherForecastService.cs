@@ -77,6 +77,7 @@ public class WeatherForecastService : IWeatherForecastService
             throw new NotFoundException($"Forecast fetch with ID {request.FetchId} was not found.");
     }
 
+    // koristi se za bg workera i sad i aako je sve na frontu sa currentWeatherom
     public async Task<List<Location>> GetLocationsAsync(CancellationToken cancellationToken = default)
     {
         return await _locationRepository.GetLocationsAsync(cancellationToken);
