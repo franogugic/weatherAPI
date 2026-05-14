@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
 using WeatherAPI.Api.Common;
 using WeatherAPI.Api.Middleware;
 using WeatherAPI.Infrastructure.Configuration;
@@ -63,6 +64,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 var app = builder.Build();
 
+LogConfiguredDatabaseName(app.Configuration, app.Logger);
+
 await ApplyMigrationsWithRetryAsync(app.Services, app.Logger, app.Lifetime.ApplicationStopping);
 
 app.UseGlobalExceptionMiddleware();
@@ -79,6 +82,39 @@ app.MapControllers();
 
 
 app.Run();
+
+static void LogConfiguredDatabaseName(IConfiguration configuration, ILogger logger)
+{
+    var connectionString = configuration.GetConnectionString("WeatherDb")
+        ?? Environment.GetEnvironmentVariable("ConnectionStrings__WeatherDb");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        logger.LogWarning("WeatherDb connection string is not configured.");
+        return;
+    }
+
+    try
+    {
+        var connectionStringBuilder = new DbConnectionStringBuilder
+        {
+            ConnectionString = connectionString
+        };
+
+        var databaseName =
+            connectionStringBuilder.TryGetValue("Initial Catalog", out var initialCatalog)
+                ? initialCatalog?.ToString()
+                : connectionStringBuilder.TryGetValue("Database", out var database)
+                    ? database?.ToString()
+                    : null;
+
+        logger.LogInformation("Using database: {DatabaseName}", databaseName ?? "unknown");
+    }
+    catch (Exception exception)
+    {
+        logger.LogWarning(exception, "Could not read database name from WeatherDb connection string.");
+    }
+}
 
 static async Task ApplyMigrationsWithRetryAsync(
     IServiceProvider services,

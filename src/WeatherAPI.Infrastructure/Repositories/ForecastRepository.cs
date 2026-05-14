@@ -98,9 +98,7 @@ public class ForecastRepository : IForecastRepository
                     forecastFetch.UpdatedAt == updatedAt,
                 cancellationToken);
     }
-
     
-
     //transakcija
     public async Task ExecuteInTransactionAsync(
         Func<CancellationToken, Task> operation,
