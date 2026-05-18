@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WeatherAPI.Domain.Entities;
+using WeatherAPI.Infrastructure.Persistence.Configurations;
 
 namespace WeatherAPI.Infrastructure.Persistence;
 
@@ -13,14 +14,16 @@ public class WeatherDbContext(DbContextOptions<WeatherDbContext> options) : DbCo
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<WeatherSymbol> WeatherSymbols => Set<WeatherSymbol>();
     public DbSet<ForecastFetchUnit> ForecastFetchUnits => Set<ForecastFetchUnit>();
-    public DbSet<User> Users => Set<User>();
-    public DbSet<UserSession> UserSessions => Set<UserSession>();
-    public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
-    public DbSet<UserFavoriteLocation> UserFavoriteLocations => Set<UserFavoriteLocation>();
-
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(WeatherDbContext).Assembly);
+        modelBuilder.ApplyConfiguration(new FetchLogConfiguration());
+        modelBuilder.ApplyConfiguration(new ForecastFetchConfiguration());
+        modelBuilder.ApplyConfiguration(new ForecastFetchUnitConfiguration());
+        modelBuilder.ApplyConfiguration(new HourlyForecastConfiguration());
+        modelBuilder.ApplyConfiguration(new LocationConfiguration());
+        modelBuilder.ApplyConfiguration(new MetricConfiguration());
+        modelBuilder.ApplyConfiguration(new UnitConfiguration());
+        modelBuilder.ApplyConfiguration(new WeatherSymbolConfiguration());
     }
 }

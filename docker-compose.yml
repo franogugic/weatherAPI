@@ -1,7 +1,7 @@
 services:
   weatherapi-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: weatherapi-db
+    container_name: weatherapi-forecast_db
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "YourStrong!Passw0rd"
@@ -10,6 +10,20 @@ services:
     volumes:
       - sqlserver-data:/var/opt/mssql
 
+  weatherapi-userdb:
+    image: postgres:17
+    container_name: weatherapi-user_db
+    environment:
+      POSTGRES_DB: UserDB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "YourStrong!Passw0rd"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+
+
   weatherapi-api:
     build:
       context: .
@@ -17,11 +31,15 @@ services:
     container_name: weatherapi-api
     depends_on:
       - weatherapi-db
+      - weatherapi-userdb
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__WeatherDb: "Server=weatherapi-db,1433;Database=WeatherDB;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
+      ConnectionStrings__UserDb: "Host=weatherapi-userdb;Port=5432;Database=UserDB;Username=postgres;Password=YourStrong!Passw0rd"
     ports:
       - "5001:8080"
+        
 
 volumes:
+  postgres_data:
   sqlserver-data:

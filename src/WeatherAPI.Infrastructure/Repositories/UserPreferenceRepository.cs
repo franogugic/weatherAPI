@@ -7,9 +7,9 @@ namespace WeatherAPI.Infrastructure.Repositories;
 
 public class UserPreferenceRepository : IUserPreferenceRepository
 {
-    private readonly WeatherDbContext _context;
+    private readonly UserDbContext _context;
 
-    public UserPreferenceRepository(WeatherDbContext context)
+    public UserPreferenceRepository(UserDbContext context)
     {
         _context = context;   
     }

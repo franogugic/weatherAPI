@@ -17,6 +17,8 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("WeatherDb")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__WeatherDb");
+        var userConnectionString = configuration.GetConnectionString("UserDb")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__UserDb");
         var weatherApiOptions = configuration
             .GetSection(WeatherApiOptions.SectionName)
             .Get<WeatherApiOptions>();
@@ -27,6 +29,12 @@ public static class DependencyInjection
                 "Database connection string is not configured. Set 'ConnectionStrings:WeatherDb' in configuration or 'ConnectionStrings__WeatherDb' in the environment/.env file.");
         }
 
+        if (string.IsNullOrWhiteSpace(userConnectionString))
+        {
+            throw new InvalidOperationException(
+                "User database connection string is not configured. Set 'ConnectionStrings:UserDb' in configuration or 'ConnectionStrings__UserDb' in the environment/.env file.");
+        }
+
         if (weatherApiOptions is null)
         {
             throw new InvalidOperationException("WeatherApi configuration section is missing.");
@@ -34,6 +42,9 @@ public static class DependencyInjection
 
         services.AddDbContext<WeatherDbContext>(options =>
             options.UseSqlServer(connectionString));
+
+        services.AddDbContext<UserDbContext>(options =>
+            options.UseNpgsql(userConnectionString));
 
         services.AddOptions<WeatherApiOptions>()
             .Bind(configuration.GetSection(WeatherApiOptions.SectionName))
@@ -76,6 +87,8 @@ public static class DependencyInjection
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddScoped<IUserFavoriteLocationService, UserFavoriteLocationService>();
         services.AddScoped<IUserFavoriteLocationRepository, UserFavoriteLocationRepository>();
+        services.AddScoped<IUserDashboardLayoutService, UserDashboardLayoutService>();
+        services.AddScoped<IUserDashboardLayoutRepository, UserDashboardLayoutRepository>();
 
         return services;
     }

@@ -54,7 +54,7 @@ public class UserPreferenceConfiguration : IEntityTypeConfiguration<UserPreferen
 
         builder.Property(preference => preference.UpdatedAt)
             .HasColumnName("updated_at")
-            .HasColumnType("datetime2(0)")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.HasOne(preference => preference.User)

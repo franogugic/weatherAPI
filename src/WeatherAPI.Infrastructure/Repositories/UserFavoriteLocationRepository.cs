@@ -7,9 +7,9 @@ namespace WeatherAPI.Infrastructure.Repositories;
 
 public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
 {
-    private readonly WeatherDbContext _context;
+    private readonly UserDbContext _context;
 
-    public UserFavoriteLocationRepository(WeatherDbContext context)
+    public UserFavoriteLocationRepository(UserDbContext context)
     {
         _context = context;  
     }
@@ -19,7 +19,6 @@ public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
     {
         return await _context.UserFavoriteLocations
             .AsNoTracking()
-            .Include(favorite => favorite.Location)
             .Where(location => location.UserId == userId)
             .ToListAsync(cancellationToken);
     }
@@ -30,7 +29,6 @@ public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.UserFavoriteLocations
-            .Include(favorite => favorite.Location)
             .FirstOrDefaultAsync(
                 favorite => favorite.UserId == userId && favorite.LocationId == locationId,
                 cancellationToken);

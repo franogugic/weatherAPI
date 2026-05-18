@@ -61,13 +61,24 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(user => user.CreatedAt)
             .HasColumnName("created_at")
-            .HasColumnType("datetime2(0)")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
         
         builder.Property(user => user.UpdatedAt)
             .HasColumnName("updated_at")
-            .HasColumnType("datetime2(0)")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
-            
+
+        builder.HasData(new
+        {
+            Id = 1,
+            FirstName = "Admin",
+            LastName = "Admin",
+            Email = "admin@admin.com",
+            PasswordHash = "$2y$10$DbMeboK6y32CFyXkf5dIx.PWWaBvqvWScrHHPtj9BG1Ur.cB3k85W",
+            Role = UserRole.Admin,
+            CreatedAt = new DateTime(2026, 5, 18, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedAt = new DateTime(2026, 5, 18, 0, 0, 0, DateTimeKind.Utc)
+        });
     }
 }

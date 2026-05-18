@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using WeatherAPI.Application.Common;
 using WeatherAPI.Application.Interfaces;
 using WeatherAPI.Domain.Entities;
@@ -9,9 +9,9 @@ namespace WeatherAPI.Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly WeatherDbContext _context;
+    private readonly UserDbContext _context;
     
-    public UserRepository(WeatherDbContext context)
+    public UserRepository(UserDbContext context)
     {
         _context = context;
     }
@@ -46,6 +46,9 @@ public class UserRepository : IUserRepository
     
     private static bool IsUniqueConstraintViolation(DbUpdateException exception)
     {
-        return exception.InnerException is SqlException { Number: 2601 or 2627 };
+        return exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation
+        };
     }
 }
