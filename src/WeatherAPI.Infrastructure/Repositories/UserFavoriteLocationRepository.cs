@@ -61,6 +61,21 @@ public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
         await SaveChangesAsync(cancellationToken);
     }
 
+    public async Task RemoveByLocationIdAsync(short locationId, CancellationToken cancellationToken = default)
+    {
+        var favoriteLocations = await _context.UserFavoriteLocations
+            .Where(favorite => favorite.LocationId == locationId)
+            .ToListAsync(cancellationToken);
+
+        if (favoriteLocations.Count == 0)
+        {
+            return;
+        }
+
+        _context.UserFavoriteLocations.RemoveRange(favoriteLocations);
+        await SaveChangesAsync(cancellationToken);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);

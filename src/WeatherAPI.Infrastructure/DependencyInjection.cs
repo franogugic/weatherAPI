@@ -76,6 +76,7 @@ public static class DependencyInjection
             .AddHttpMessageHandler<TimeoutPerAttemptHandler>();
 
         services.AddScoped<IWeatherForecastService, WeatherForecastService>();
+        services.AddScoped<IAdminLocationService, AdminLocationService>();
         services.AddScoped<IForecastPersistenceService, ForecastPersistenceService>();
         services.AddScoped<IForecastReferenceDataService, ForecastReferenceDataService>();
         services.AddScoped<ILocationRepository, LocationRepository>();

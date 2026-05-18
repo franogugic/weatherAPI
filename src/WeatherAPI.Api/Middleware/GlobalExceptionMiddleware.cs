@@ -65,6 +65,19 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 StatusCodes.Status401Unauthorized,
                 exception.Message);
         }
+        catch (ForbiddenException exception)
+        {
+            logger.LogWarning(
+                exception,
+                "A forbidden access error occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status403Forbidden,
+                exception.Message);
+        }
         catch (Exception exception)
         {
             logger.LogError(
