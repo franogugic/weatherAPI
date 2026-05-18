@@ -40,14 +40,42 @@ public class AdminLocationController : ControllerBase
         int locationId,
         CancellationToken cancellationToken)
     {
-        if (locationId <= 0 || locationId > short.MaxValue)
-        {
-            throw new BadRequestException("Location id is invalid.");
-        }
-
         await _adminLocationService.DeleteLocationAsync(
             GetSessionToken(),
-            (short)locationId,
+            ValidateLocationId(locationId),
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpGet("{locationId:int}/fetches")]
+    public async Task<IActionResult> GetLocationFetches(
+        int locationId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _adminLocationService.GetLocationFetchesAsync(
+            GetSessionToken(),
+            ValidateLocationId(locationId),
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpDelete("{locationId:int}/fetches/{fetchId:int}")]
+    public async Task<IActionResult> DeleteLocationFetch(
+        int locationId,
+        int fetchId,
+        CancellationToken cancellationToken)
+    {
+        if (fetchId <= 0)
+        {
+            throw new BadRequestException("Fetch id is invalid.");
+        }
+
+        await _adminLocationService.DeleteLocationFetchAsync(
+            GetSessionToken(),
+            ValidateLocationId(locationId),
+            fetchId,
             cancellationToken);
 
         return NoContent();
@@ -63,5 +91,15 @@ public class AdminLocationController : ControllerBase
         }
 
         return sessionToken;
+    }
+
+    private static short ValidateLocationId(int locationId)
+    {
+        if (locationId <= 0 || locationId > short.MaxValue)
+        {
+            throw new BadRequestException("Location id is invalid.");
+        }
+
+        return (short)locationId;
     }
 }

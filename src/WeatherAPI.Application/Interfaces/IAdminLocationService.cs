@@ -13,4 +13,15 @@ public interface IAdminLocationService
         string sessionToken,
         short locationId,
         CancellationToken cancellationToken = default);
+
+    Task<List<GetLocationFetchLogResponseDto>> GetLocationFetchesAsync(
+        string sessionToken,
+        short locationId,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteLocationFetchAsync(
+        string sessionToken,
+        short locationId,
+        int fetchId,
+        CancellationToken cancellationToken = default);
 }

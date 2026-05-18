@@ -22,6 +22,8 @@ public interface IForecastRepository
 
     Task<bool> HasSameUpdatedAtAsync(short locationId,
         DateTime updatedAt, CancellationToken cancellationToken = default);
+    Task<List<GetLocationFetchLogResponseDto>> GetLocationFetchesAsync(short locationId, CancellationToken cancellationToken = default);
     Task<List<GetWeatherForecastUnitMetaQueryDto>> GetUnitsByFetchAsync(int fetchId, CancellationToken cancellationToken = default);
     Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default);
+    Task<bool> DeleteForecastFetchAsync(int fetchId, short locationId, CancellationToken cancellationToken = default);
 }

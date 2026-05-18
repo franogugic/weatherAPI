@@ -9,15 +9,18 @@ namespace WeatherAPI.Application.Service;
 public class AdminLocationService : IAdminLocationService
 {
     private readonly IAuthService _authService;
+    private readonly IForecastRepository _forecastRepository;
     private readonly ILocationRepository _locationRepository;
     private readonly IUserFavoriteLocationRepository _userFavoriteLocationRepository;
 
     public AdminLocationService(
         IAuthService authService,
+        IForecastRepository forecastRepository,
         ILocationRepository locationRepository,
         IUserFavoriteLocationRepository userFavoriteLocationRepository)
     {
         _authService = authService;
+        _forecastRepository = forecastRepository;
         _locationRepository = locationRepository;
         _userFavoriteLocationRepository = userFavoriteLocationRepository;
     }
@@ -80,6 +83,38 @@ public class AdminLocationService : IAdminLocationService
         await _userFavoriteLocationRepository.RemoveByLocationIdAsync(locationId, cancellationToken);
     }
 
+    public async Task<List<GetLocationFetchLogResponseDto>> GetLocationFetchesAsync(
+        string sessionToken,
+        short locationId,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureAdminAsync(sessionToken, cancellationToken);
+        await EnsureLocationExistsAsync(locationId, cancellationToken);
+
+        return await _forecastRepository.GetLocationFetchesAsync(locationId, cancellationToken);
+    }
+
+    public async Task DeleteLocationFetchAsync(
+        string sessionToken,
+        short locationId,
+        int fetchId,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureAdminAsync(sessionToken, cancellationToken);
+        await EnsureLocationExistsAsync(locationId, cancellationToken);
+
+        var wasDeleted = await _forecastRepository.DeleteForecastFetchAsync(
+            fetchId,
+            locationId,
+            cancellationToken);
+
+        if (!wasDeleted)
+        {
+            throw new NotFoundException(
+                $"Forecast fetch with ID {fetchId} was not found for location with ID {locationId}.");
+        }
+    }
+
     private async Task EnsureAdminAsync(string sessionToken, CancellationToken cancellationToken)
     {
         var user = await _authService.GetCurrentUserAsync(sessionToken, cancellationToken);
@@ -87,6 +122,16 @@ public class AdminLocationService : IAdminLocationService
         if (user.Role != UserRole.Admin)
         {
             throw new ForbiddenException("Only admin users can manage global locations.");
+        }
+    }
+
+    private async Task EnsureLocationExistsAsync(short locationId, CancellationToken cancellationToken)
+    {
+        var location = await _locationRepository.GetByIdAsync(locationId, cancellationToken);
+
+        if (location is null)
+        {
+            throw new NotFoundException($"Location with ID {locationId} was not found.");
         }
     }
 }

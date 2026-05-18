@@ -185,6 +185,28 @@ public class ForecastRepository : IForecastRepository
             })
             .ToListAsync(cancellationToken);
     }
+
+    public Task<List<GetLocationFetchLogResponseDto>> GetLocationFetchesAsync(short locationId, CancellationToken cancellationToken = default)
+    {
+        return _context.ForecastFetches
+            .AsNoTracking()
+            .Where(fetch => fetch.LocationId == locationId)
+            .OrderByDescending(fetch => fetch.FetchedAt)
+            .Select(fetch => new GetLocationFetchLogResponseDto
+            {
+                FetchId = fetch.Id,
+                LocationId = fetch.LocationId,
+                ResponseType = fetch.ResponseType,
+                UpdatedAt = fetch.UpdatedAt.HasValue
+                    ? DateTime.SpecifyKind(fetch.UpdatedAt.Value, DateTimeKind.Utc)
+                    : null,
+                FetchedAt = DateTime.SpecifyKind(fetch.FetchedAt, DateTimeKind.Utc),
+                StatusCode = fetch.FetchLog != null ? fetch.FetchLog.StatusCode : null,
+                ErrorMessage = fetch.FetchLog != null ? fetch.FetchLog.ErrorMessage : null,
+                HourlyForecastCount = fetch.HourlyForecasts.Count
+            })
+            .ToListAsync(cancellationToken);
+    }
     
     // brisanje fetcha i povezanih tablica
     public async Task<bool> DeleteForecastFetchAsync(int fetchId, CancellationToken cancellationToken = default)
@@ -200,4 +222,20 @@ public class ForecastRepository : IForecastRepository
         return false;
     }
 
+    public async Task<bool> DeleteForecastFetchAsync(int fetchId, short locationId, CancellationToken cancellationToken = default)
+    {
+        var forecastFetch = await _context.ForecastFetches
+            .FirstOrDefaultAsync(
+                fetch => fetch.Id == fetchId && fetch.LocationId == locationId,
+                cancellationToken);
+
+        if (forecastFetch is null)
+        {
+            return false;
+        }
+
+        _context.ForecastFetches.Remove(forecastFetch);
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }
