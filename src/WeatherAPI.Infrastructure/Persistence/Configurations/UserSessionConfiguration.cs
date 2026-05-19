@@ -34,17 +34,17 @@ public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
 
         builder.Property(session => session.CreatedAt)
             .HasColumnName("created_at")
-            .HasColumnType("datetime2(0)")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.Property(session => session.ExpiresAt)
             .HasColumnName("expires_at")
-            .HasColumnType("datetime2(0)")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.Property(session => session.RevokedAt)
             .HasColumnName("revoked_at")
-            .HasColumnType("datetime2(0)");
+            .HasColumnType("timestamp with time zone");
 
         builder.HasIndex(session => new { session.UserId, session.ExpiresAt })
             .HasDatabaseName("IX_UserSession_UserId_ExpiresAt");

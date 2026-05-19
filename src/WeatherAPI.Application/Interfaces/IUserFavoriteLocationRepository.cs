@@ -26,5 +26,7 @@ public interface IUserFavoriteLocationRepository
         UserFavoriteLocation favoriteLocation,
         CancellationToken cancellationToken = default);
 
+    Task RemoveByLocationIdAsync(short locationId, CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

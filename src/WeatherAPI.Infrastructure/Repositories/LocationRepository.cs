@@ -95,5 +95,24 @@ public class LocationRepository : ILocationRepository
     {
         await _context.Locations.AddAsync(location, cancellationToken);  
     }
-    
+
+    public async Task<bool> DeleteAsync(short locationId, CancellationToken cancellationToken = default)
+    {
+        var location = await _context.Locations
+            .FirstOrDefaultAsync(location => location.Id == locationId, cancellationToken);
+
+        if (location is null)
+        {
+            return false;
+        }
+
+        _context.Locations.Remove(location);
+        await SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

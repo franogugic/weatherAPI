@@ -7,9 +7,9 @@ namespace WeatherAPI.Infrastructure.Repositories;
 
 public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
 {
-    private readonly WeatherDbContext _context;
+    private readonly UserDbContext _context;
 
-    public UserFavoriteLocationRepository(WeatherDbContext context)
+    public UserFavoriteLocationRepository(UserDbContext context)
     {
         _context = context;  
     }
@@ -19,7 +19,6 @@ public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
     {
         return await _context.UserFavoriteLocations
             .AsNoTracking()
-            .Include(favorite => favorite.Location)
             .Where(location => location.UserId == userId)
             .ToListAsync(cancellationToken);
     }
@@ -30,7 +29,6 @@ public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.UserFavoriteLocations
-            .Include(favorite => favorite.Location)
             .FirstOrDefaultAsync(
                 favorite => favorite.UserId == userId && favorite.LocationId == locationId,
                 cancellationToken);
@@ -60,6 +58,21 @@ public class UserFavoriteLocationRepository : IUserFavoriteLocationRepository
         CancellationToken cancellationToken = default)
     {
         _context.UserFavoriteLocations.Remove(favoriteLocation);
+        await SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RemoveByLocationIdAsync(short locationId, CancellationToken cancellationToken = default)
+    {
+        var favoriteLocations = await _context.UserFavoriteLocations
+            .Where(favorite => favorite.LocationId == locationId)
+            .ToListAsync(cancellationToken);
+
+        if (favoriteLocations.Count == 0)
+        {
+            return;
+        }
+
+        _context.UserFavoriteLocations.RemoveRange(favoriteLocations);
         await SaveChangesAsync(cancellationToken);
     }
 

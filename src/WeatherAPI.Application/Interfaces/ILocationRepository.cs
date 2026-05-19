@@ -14,4 +14,6 @@ public interface ILocationRepository
         IEnumerable<short> locationIds,
         CancellationToken cancellationToken = default);
     Task AddAsync(Location location, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(short locationId, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

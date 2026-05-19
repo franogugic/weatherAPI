@@ -27,7 +27,7 @@ public class UserFavoriteLocationConfiguration : IEntityTypeConfiguration<UserFa
 
         builder.Property(favoriteLocation => favoriteLocation.CreatedAt)
             .HasColumnName("created_at")
-            .HasColumnType("datetime2(0)")
+            .HasColumnType("timestamp with time zone")
             .IsRequired();
 
         builder.HasOne(favoriteLocation => favoriteLocation.User)
@@ -36,10 +36,6 @@ public class UserFavoriteLocationConfiguration : IEntityTypeConfiguration<UserFa
             .HasConstraintName("FK_UserFavoriteLocation_AppUser_UserId")
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(favoriteLocation => favoriteLocation.Location)
-            .WithMany()
-            .HasForeignKey(favoriteLocation => favoriteLocation.LocationId)
-            .HasConstraintName("FK_UserFavoriteLocation_Location_LocationId")
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.Ignore(favoriteLocation => favoriteLocation.Location);
     }
 }

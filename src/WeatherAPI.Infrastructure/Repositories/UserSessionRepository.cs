@@ -7,9 +7,9 @@ namespace WeatherAPI.Infrastructure.Repositories;
 
 public class UserSessionRepository : IUserSessionRepository
 {
-    private readonly WeatherDbContext _context;
+    private readonly UserDbContext _context;
     
-    public UserSessionRepository(WeatherDbContext context)
+    public UserSessionRepository(UserDbContext context)
     {
         _context = context;
     }

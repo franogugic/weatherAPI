@@ -66,7 +66,14 @@ var app = builder.Build();
 
 LogConfiguredDatabaseName(app.Configuration, app.Logger);
 
-await ApplyMigrationsWithRetryAsync(app.Services, app.Logger, app.Lifetime.ApplicationStopping);
+await ApplyMigrationsWithRetryAsync<WeatherDbContext>(
+    app.Services,
+    app.Logger,
+    app.Lifetime.ApplicationStopping);
+await ApplyMigrationsWithRetryAsync<UserDbContext>(
+    app.Services,
+    app.Logger,
+    app.Lifetime.ApplicationStopping);
 
 app.UseGlobalExceptionMiddleware();
 
@@ -116,10 +123,11 @@ static void LogConfiguredDatabaseName(IConfiguration configuration, ILogger logg
     }
 }
 
-static async Task ApplyMigrationsWithRetryAsync(
+static async Task ApplyMigrationsWithRetryAsync<TContext>(
     IServiceProvider services,
     ILogger logger,
     CancellationToken cancellationToken)
+    where TContext : DbContext
 {
     const int maxAttempts = 10;
     var delay = TimeSpan.FromSeconds(5);
@@ -129,10 +137,12 @@ static async Task ApplyMigrationsWithRetryAsync(
         try
         {
             using var scope = services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<WeatherDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<TContext>();
 
             await dbContext.Database.MigrateAsync(cancellationToken);
-            logger.LogInformation("Database migrations applied successfully.");
+            logger.LogInformation(
+                "{DbContextName} migrations applied successfully.",
+                typeof(TContext).Name);
             return;
         }
         catch (Exception exception) when (attempt < maxAttempts)
@@ -149,6 +159,6 @@ static async Task ApplyMigrationsWithRetryAsync(
     }
 
     using var finalScope = services.CreateScope();
-    var finalDbContext = finalScope.ServiceProvider.GetRequiredService<WeatherDbContext>();
+    var finalDbContext = finalScope.ServiceProvider.GetRequiredService<TContext>();
     await finalDbContext.Database.MigrateAsync(cancellationToken);
 }

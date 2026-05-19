@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using WeatherAPI.Infrastructure.Configuration;
 
 namespace WeatherAPI.Infrastructure.Persistence;
@@ -8,11 +9,11 @@ public class WeatherDbContextFactory : IDesignTimeDbContextFactory<WeatherDbCont
 {
     public WeatherDbContext CreateDbContext(string[] args)
     {
-        EnvironmentLoader.LoadFromRoot();
-
+        var configuration = DesignTimeConfiguration.Build();
         var optionsBuilder = new DbContextOptionsBuilder<WeatherDbContext>();
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__WeatherDb")
-            ?? throw new InvalidOperationException("ConnectionStrings__WeatherDb is not configured.");
+        var connectionString = configuration.GetConnectionString("WeatherDb")
+            ?? throw new InvalidOperationException(
+                "WeatherDb connection string is not configured. Set 'ConnectionStrings:WeatherDb' in appsettings or 'ConnectionStrings__WeatherDb' in the environment/.env file.");
 
         optionsBuilder.UseSqlServer(connectionString);
 
