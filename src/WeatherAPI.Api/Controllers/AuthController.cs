@@ -38,7 +38,7 @@ public class AuthController : ControllerBase
             {
                 HttpOnly = true,
                 Secure = _authOptions.CookieSecure,
-                SameSite = SameSiteMode.Lax,
+                SameSite = GetCookieSameSiteMode(),
                 Path = "/",
                 Expires = response.ExpiresAt
             });
@@ -70,11 +70,20 @@ public class AuthController : ControllerBase
             {
                 HttpOnly = true,
                 Secure = _authOptions.CookieSecure,
-                SameSite = SameSiteMode.Lax,
+                SameSite = GetCookieSameSiteMode(),
                 Path = "/"
             });
-        Response.Cookies.Delete(_authOptions.SessionCookieName);
 
         return NoContent();
+    }
+
+    private SameSiteMode GetCookieSameSiteMode()
+    {
+        return Enum.TryParse<SameSiteMode>(
+            _authOptions.CookieSameSite,
+            ignoreCase: true,
+            out var sameSiteMode)
+            ? sameSiteMode
+            : SameSiteMode.Lax;
     }
 }

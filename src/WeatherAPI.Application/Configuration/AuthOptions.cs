@@ -7,4 +7,5 @@ public sealed class AuthOptions
     public int SessionDurationDays { get; set; } = 7;
     public string SessionCookieName { get; set; } = "weather_session";
     public bool CookieSecure { get; set; }
+    public string CookieSameSite { get; set; } = "Lax";
 }

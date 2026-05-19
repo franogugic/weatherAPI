@@ -60,6 +60,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(AuthOptions.SectionName))
             .Validate(options => options.SessionDurationDays > 0, "Auth:SessionDurationDays must be greater than 0.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.SessionCookieName), "Auth:SessionCookieName is required.")
+            .Validate(options => IsValidSameSiteMode(options.CookieSameSite), "Auth:CookieSameSite must be Strict, Lax, None, or Unspecified.")
             .ValidateOnStart();
 
         services.AddHostedService<ForecastFetchBackgroundService>();
@@ -92,5 +93,13 @@ public static class DependencyInjection
         services.AddScoped<IUserDashboardLayoutRepository, UserDashboardLayoutRepository>();
 
         return services;
+    }
+
+    private static bool IsValidSameSiteMode(string cookieSameSite)
+    {
+        return cookieSameSite.Equals("Strict", StringComparison.OrdinalIgnoreCase)
+            || cookieSameSite.Equals("Lax", StringComparison.OrdinalIgnoreCase)
+            || cookieSameSite.Equals("None", StringComparison.OrdinalIgnoreCase)
+            || cookieSameSite.Equals("Unspecified", StringComparison.OrdinalIgnoreCase);
     }
 }
