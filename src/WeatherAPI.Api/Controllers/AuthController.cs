@@ -34,14 +34,7 @@ public class AuthController : ControllerBase
         Response.Cookies.Append(
             _authOptions.SessionCookieName,
             response.SessionToken,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = _authOptions.CookieSecure,
-                SameSite = GetCookieSameSiteMode(),
-                Path = "/",
-                Expires = response.ExpiresAt
-            });
+            BuildSessionCookieOptions(response.ExpiresAt));
 
         return Ok(response.User);
     }
@@ -66,13 +59,7 @@ public class AuthController : ControllerBase
         
         Response.Cookies.Delete(
             _authOptions.SessionCookieName,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = _authOptions.CookieSecure,
-                SameSite = GetCookieSameSiteMode(),
-                Path = "/"
-            });
+            BuildSessionCookieOptions());
 
         return NoContent();
     }
@@ -85,5 +72,45 @@ public class AuthController : ControllerBase
             out var sameSiteMode)
             ? sameSiteMode
             : SameSiteMode.Lax;
+    }
+
+    private CookieOptions BuildSessionCookieOptions(DateTime? expiresAt = null)
+    {
+        var sameSiteMode = GetCookieSameSiteMode();
+        var isHttpsRequest = Request.IsHttps ||
+                             string.Equals(
+                                 Request.Headers["X-Forwarded-Proto"],
+                                 "https",
+                                 StringComparison.OrdinalIgnoreCase);
+        var isCrossOriginRequest = IsCrossOriginRequest();
+
+        if (isHttpsRequest && isCrossOriginRequest)
+        {
+            sameSiteMode = SameSiteMode.None;
+        }
+
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = _authOptions.CookieSecure || isHttpsRequest,
+            SameSite = sameSiteMode,
+            Path = "/",
+            Expires = expiresAt.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(expiresAt.Value, DateTimeKind.Utc))
+                : null
+        };
+    }
+
+    private bool IsCrossOriginRequest()
+    {
+        var origin = Request.Headers.Origin.ToString();
+
+        if (string.IsNullOrWhiteSpace(origin))
+        {
+            return false;
+        }
+
+        var requestOrigin = $"{Request.Scheme}://{Request.Host}";
+        return !string.Equals(origin, requestOrigin, StringComparison.OrdinalIgnoreCase);
     }
 }

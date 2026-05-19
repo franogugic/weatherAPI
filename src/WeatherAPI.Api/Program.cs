@@ -24,7 +24,11 @@ const string FrontendCorsPolicy = "FrontendCorsPolicy";
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>()
-    ?? ["http://localhost:5173", "https://weatherapi-internship.onrender.com"];
+    ?? [
+        "http://localhost:5173",
+        "https://weatherapi-internship.onrender.com",
+        "https://weatherapi-frontend-jxjm.onrender.com"
+    ];
 
 builder.Services.AddCors(options => 
 {
