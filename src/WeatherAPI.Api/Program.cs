@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
 using WeatherAPI.Api.Common;
@@ -21,14 +22,21 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
-var allowedOrigins = builder.Configuration
+var configuredOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>()
-    ?? [
+    ?? [];
+
+var allowedOrigins = configuredOrigins
+    .Concat([
         "http://localhost:5173",
         "https://weatherapi-internship.onrender.com",
         "https://weatherapi-frontend-jxjm.onrender.com"
-    ];
+    ])
+    .Select(origin => origin.Trim().TrimEnd('/'))
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
 
 builder.Services.AddCors(options => 
 {
@@ -39,6 +47,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowCredentials();
     });
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -79,6 +94,7 @@ await ApplyMigrationsWithRetryAsync<UserDbContext>(
     app.Logger,
     app.Lifetime.ApplicationStopping);
 
+app.UseForwardedHeaders();
 app.UseGlobalExceptionMiddleware();
 
 if (!app.Environment.IsDevelopment())

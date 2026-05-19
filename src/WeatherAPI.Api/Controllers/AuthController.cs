@@ -77,17 +77,18 @@ public class AuthController : ControllerBase
     private CookieOptions BuildSessionCookieOptions(DateTime? expiresAt = null)
     {
         var sameSiteMode = GetCookieSameSiteMode();
-        var isHttpsRequest = Request.IsHttps ||
-                             string.Equals(
-                                 Request.Headers["X-Forwarded-Proto"],
-                                 "https",
-                                 StringComparison.OrdinalIgnoreCase);
-        var isCrossOriginRequest = IsCrossOriginRequest();
+        var forwardedProtoHeader = Request.Headers["X-Forwarded-Proto"].ToString();
+        var isHttpsRequest = Request.IsHttps || forwardedProtoHeader
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(protocol => string.Equals(protocol, "https", StringComparison.OrdinalIgnoreCase));
+        var hasOriginHeader = !string.IsNullOrWhiteSpace(Request.Headers.Origin.ToString());
 
-        if (isHttpsRequest && isCrossOriginRequest)
+        if (isHttpsRequest && hasOriginHeader)
         {
             sameSiteMode = SameSiteMode.None;
         }
+
+        var expiresAtUtc = expiresAt?.ToUniversalTime();
 
         return new CookieOptions
         {
@@ -95,22 +96,12 @@ public class AuthController : ControllerBase
             Secure = _authOptions.CookieSecure || isHttpsRequest,
             SameSite = sameSiteMode,
             Path = "/",
-            Expires = expiresAt.HasValue
-                ? new DateTimeOffset(DateTime.SpecifyKind(expiresAt.Value, DateTimeKind.Utc))
+            Expires = expiresAtUtc.HasValue
+                ? new DateTimeOffset(DateTime.SpecifyKind(expiresAtUtc.Value, DateTimeKind.Utc))
+                : null,
+            MaxAge = expiresAtUtc.HasValue
+                ? expiresAtUtc.Value - DateTime.UtcNow
                 : null
         };
-    }
-
-    private bool IsCrossOriginRequest()
-    {
-        var origin = Request.Headers.Origin.ToString();
-
-        if (string.IsNullOrWhiteSpace(origin))
-        {
-            return false;
-        }
-
-        var requestOrigin = $"{Request.Scheme}://{Request.Host}";
-        return !string.Equals(origin, requestOrigin, StringComparison.OrdinalIgnoreCase);
     }
 }
