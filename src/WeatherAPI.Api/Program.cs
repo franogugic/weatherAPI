@@ -22,27 +22,12 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 
 const string FrontendCorsPolicy = "FrontendCorsPolicy";
-var configuredOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>()
-    ?? [];
-
-var allowedOrigins = configuredOrigins
-    .Concat([
-        "http://localhost:5173",
-        "https://weatherapi-internship.onrender.com",
-        "https://weatherapi-frontend-jxjm.onrender.com"
-    ])
-    .Select(origin => origin.Trim().TrimEnd('/'))
-    .Where(origin => !string.IsNullOrWhiteSpace(origin))
-    .Distinct(StringComparer.OrdinalIgnoreCase)
-    .ToArray();
 
 builder.Services.AddCors(options => 
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(origin => !string.IsNullOrWhiteSpace(origin))
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -54,6 +39,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
+});
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = builder.Environment.IsDevelopment()
+        ? SameSiteMode.Lax
+        : SameSiteMode.None;
+    options.Secure = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
 });
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
@@ -96,6 +91,7 @@ await ApplyMigrationsWithRetryAsync<UserDbContext>(
 
 app.UseForwardedHeaders();
 app.UseGlobalExceptionMiddleware();
+app.UseCookiePolicy();
 
 if (!app.Environment.IsDevelopment())
 {
