@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using WeatherAPI.Application.Common;
+using WeatherAPI.Api.Extensions;
 using WeatherAPI.Application.Configuration;
 using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
@@ -83,14 +84,7 @@ public class AdminLocationController : ControllerBase
 
     private string GetSessionToken()
     {
-        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
-
-        if (string.IsNullOrWhiteSpace(sessionToken))
-        {
-            throw new UnauthorizedAccessException("User is not authenticated");
-        }
-
-        return sessionToken;
+        return Request.GetSessionToken(_authOptions);
     }
 
     private static short ValidateLocationId(int locationId)

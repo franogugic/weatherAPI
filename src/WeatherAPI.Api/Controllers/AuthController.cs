@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using WeatherAPI.Api.Extensions;
 using WeatherAPI.Application.Configuration;
 using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
@@ -36,17 +37,14 @@ public class AuthController : ControllerBase
             response.SessionToken,
             BuildSessionCookieOptions(response.ExpiresAt));
 
+        response.User.SessionToken = response.SessionToken;
         return Ok(response.User);
     }
     
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
     {
-        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
-        
-        if (string.IsNullOrWhiteSpace(sessionToken))
-            throw new UnauthorizedAccessException("User is not authenticated");
-        
+        var sessionToken = Request.GetSessionToken(_authOptions);
         var response = await _authService.GetCurrentUserAsync(sessionToken, cancellationToken);
         return Ok(response);
     }
@@ -54,7 +52,7 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        var sessionToken = Request.Cookies[_authOptions.SessionCookieName];
+        var sessionToken = Request.GetSessionToken(_authOptions);
         await _authService.LogoutAsync(sessionToken, cancellationToken);
         
         Response.Cookies.Delete(
