@@ -78,6 +78,19 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
                 StatusCodes.Status403Forbidden,
                 exception.Message);
         }
+        catch (ExternalServiceException exception)
+        {
+            logger.LogWarning(
+                exception,
+                "An external service error occurred for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+
+            await WriteErrorResponseAsync(
+                context,
+                exception.StatusCode,
+                exception.Message);
+        }
         catch (Exception exception)
         {
             logger.LogError(

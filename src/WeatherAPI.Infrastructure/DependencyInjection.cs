@@ -22,6 +22,9 @@ public static class DependencyInjection
         var weatherApiOptions = configuration
             .GetSection(WeatherApiOptions.SectionName)
             .Get<WeatherApiOptions>();
+        var openAiOptions = configuration
+            .GetSection(OpenAiOptions.SectionName)
+            .Get<OpenAiOptions>() ?? new OpenAiOptions();
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -63,6 +66,13 @@ public static class DependencyInjection
             .Validate(options => IsValidSameSiteMode(options.CookieSameSite), "Auth:CookieSameSite must be Strict, Lax, None, or Unspecified.")
             .ValidateOnStart();
 
+        services.AddOptions<OpenAiOptions>()
+            .Bind(configuration.GetSection(OpenAiOptions.SectionName))
+            .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "OpenAI:BaseUrl must be an absolute URL.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Model), "OpenAI:Model is required.")
+            .Validate(options => options.MaxOutputTokens > 0, "OpenAI:MaxOutputTokens must be greater than 0.")
+            .ValidateOnStart();
+
         services.AddHostedService<ForecastFetchBackgroundService>();
         
         services.AddTransient<RetryOnTransientFailureHandler>();
@@ -76,12 +86,19 @@ public static class DependencyInjection
             .AddHttpMessageHandler<RetryOnTransientFailureHandler>()
             .AddHttpMessageHandler<TimeoutPerAttemptHandler>();
 
+        services.AddHttpClient<ILlmClient, OpenAiLlmClient>(client =>
+        {
+            client.BaseAddress = new Uri(openAiOptions.BaseUrl);
+        });
+
         services.AddScoped<IWeatherForecastService, WeatherForecastService>();
+        services.AddScoped<IWeatherChatService, WeatherChatService>();
         services.AddScoped<IAdminLocationService, AdminLocationService>();
         services.AddScoped<IForecastPersistenceService, ForecastPersistenceService>();
         services.AddScoped<IForecastReferenceDataService, ForecastReferenceDataService>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<IForecastRepository, ForecastRepository>();
+        services.AddScoped<IWeatherChatRepository, WeatherChatRepository>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();

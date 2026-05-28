@@ -36,6 +36,7 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__WeatherDb: "Server=weatherapi-db,1433;Database=WeatherDB;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
       ConnectionStrings__UserDb: "Host=weatherapi-userdb;Port=5432;Database=UserDB;Username=postgres;Password=YourStrong!Passw0rd"
+      OpenAI__ApiKey: "${OPENAI_API_KEY:-}"
     ports:
       - "5001:8080"
         
