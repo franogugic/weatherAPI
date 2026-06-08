@@ -93,6 +93,7 @@ public static class DependencyInjection
 
         services.AddScoped<IWeatherForecastService, WeatherForecastService>();
         services.AddScoped<IWeatherChatService, WeatherChatService>();
+        services.AddScoped<IWeatherRuleBasedAnswerService, WeatherRuleBasedAnswerService>();
         services.AddScoped<IAdminLocationService, AdminLocationService>();
         services.AddScoped<IForecastPersistenceService, ForecastPersistenceService>();
         services.AddScoped<IForecastReferenceDataService, ForecastReferenceDataService>();
