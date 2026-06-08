@@ -22,9 +22,12 @@ public static class DependencyInjection
         var weatherApiOptions = configuration
             .GetSection(WeatherApiOptions.SectionName)
             .Get<WeatherApiOptions>();
-        var openAiOptions = configuration
-            .GetSection(OpenAiOptions.SectionName)
-            .Get<OpenAiOptions>() ?? new OpenAiOptions();
+        var llmOptions = configuration
+            .GetSection(LlmOptions.SectionName)
+            .Get<LlmOptions>() ?? new LlmOptions();
+        var geminiOptions = configuration
+            .GetSection(GeminiOptions.SectionName)
+            .Get<GeminiOptions>() ?? new GeminiOptions();
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
@@ -66,11 +69,17 @@ public static class DependencyInjection
             .Validate(options => IsValidSameSiteMode(options.CookieSameSite), "Auth:CookieSameSite must be Strict, Lax, None, or Unspecified.")
             .ValidateOnStart();
 
-        services.AddOptions<OpenAiOptions>()
-            .Bind(configuration.GetSection(OpenAiOptions.SectionName))
-            .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "OpenAI:BaseUrl must be an absolute URL.")
-            .Validate(options => !string.IsNullOrWhiteSpace(options.Model), "OpenAI:Model is required.")
-            .Validate(options => options.MaxOutputTokens > 0, "OpenAI:MaxOutputTokens must be greater than 0.")
+        services.AddOptions<LlmOptions>()
+            .Bind(configuration.GetSection(LlmOptions.SectionName))
+            .Validate(options => IsValidLlmProvider(options.Provider), "Llm:Provider must be Gemini or None.")
+            .ValidateOnStart();
+
+        services.AddOptions<GeminiOptions>()
+            .Bind(configuration.GetSection(GeminiOptions.SectionName))
+            .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "Gemini:BaseUrl must be an absolute URL.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Model), "Gemini:Model is required.")
+            .Validate(options => options.MaxOutputTokens > 0, "Gemini:MaxOutputTokens must be greater than 0.")
+            .Validate(options => options.Temperature is >= 0 and <= 2, "Gemini:Temperature must be between 0 and 2.")
             .ValidateOnStart();
 
         services.AddHostedService<ForecastFetchBackgroundService>();
@@ -86,10 +95,7 @@ public static class DependencyInjection
             .AddHttpMessageHandler<RetryOnTransientFailureHandler>()
             .AddHttpMessageHandler<TimeoutPerAttemptHandler>();
 
-        services.AddHttpClient<ILlmClient, OpenAiLlmClient>(client =>
-        {
-            client.BaseAddress = new Uri(openAiOptions.BaseUrl);
-        });
+        AddLlmClient(services, llmOptions, geminiOptions);
 
         services.AddScoped<IWeatherForecastService, WeatherForecastService>();
         services.AddScoped<IWeatherChatService, WeatherChatService>();
@@ -111,6 +117,30 @@ public static class DependencyInjection
         services.AddScoped<IUserDashboardLayoutRepository, UserDashboardLayoutRepository>();
 
         return services;
+    }
+
+    private static void AddLlmClient(
+        IServiceCollection services,
+        LlmOptions llmOptions,
+        GeminiOptions geminiOptions)
+    {
+        if (llmOptions.Provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient<ILlmClient, GeminiLlmClient>(client =>
+            {
+                client.BaseAddress = new Uri(geminiOptions.BaseUrl);
+            });
+
+            return;
+        }
+
+        services.AddScoped<ILlmClient, DisabledLlmClient>();
+    }
+
+    private static bool IsValidLlmProvider(string provider)
+    {
+        return provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase)
+            || provider.Equals("None", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsValidSameSiteMode(string cookieSameSite)

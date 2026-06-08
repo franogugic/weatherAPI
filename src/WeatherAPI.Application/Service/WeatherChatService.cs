@@ -45,6 +45,12 @@ public class WeatherChatService : IWeatherChatService
             var input = BuildInput(request.Message, context);
             answer = await _llmClient.GenerateAsync(instructions, input, cancellationToken);
             source = "LLM";
+
+            if (IsLikelyIncompleteAnswer(answer, request.Message))
+            {
+                answer = _ruleBasedAnswerService.GenerateAnswer(request.Message, context, request.Language);
+                source = "Rules";
+            }
         }
         catch (Exception exception) when (ShouldFallbackToRules(exception, cancellationToken))
         {
@@ -82,14 +88,44 @@ public class WeatherChatService : IWeatherChatService
         return $$"""
             You are a weather assistant inside a weather application.
             Answer in {{responseLanguage}}.
-            The database context is the primary source of truth for weather, location, timing, and measurements.
+            The forecast context is the source of truth for weather, location, timing, and measurements.
             Use general meteorological knowledge only to explain what the retrieved values mean or to give practical advice.
-            Do not invent missing weather values. If the database does not contain enough data for the user's question, say that clearly.
+            Do not invent missing weather values. If the forecast does not contain enough information for the user's question, say that clearly.
             Mention the relevant period when the answer depends on time.
             For Croatian answers, format dates as dd.MM.yyyy. HH:mm.
             If the user asks about a named period such as danas, sutra, večeras, today, tomorrow, or tonight, show only the time like 13:00 instead of a full date.
             Keep the answer concise, practical, and friendly.
+            If the user asks for a plan, return a complete plan with short time blocks and do not stop mid-sentence.
             """;
+    }
+
+    private static bool IsLikelyIncompleteAnswer(string answer, string message)
+    {
+        var trimmedAnswer = answer.Trim();
+
+        if (string.IsNullOrWhiteSpace(trimmedAnswer))
+            return true;
+
+        var normalizedMessage = Normalize(message);
+        var asksForPlan = ContainsAny(normalizedMessage, [
+            "plan", "raspored", "aktivnost", "priroda", "izlet", "schedule", "activities", "outdoor"
+        ]);
+
+        if (!asksForPlan)
+            return false;
+
+        if (trimmedAnswer.EndsWith('.') || trimmedAnswer.EndsWith('!') || trimmedAnswer.EndsWith('?'))
+            return false;
+
+        var normalizedAnswer = Normalize(trimmedAnswer);
+        return trimmedAnswer.Length < 180
+            || normalizedAnswer.EndsWith(" s obzi", StringComparison.OrdinalIgnoreCase)
+            || normalizedAnswer.EndsWith(" s obzirom", StringComparison.OrdinalIgnoreCase)
+            || normalizedAnswer.EndsWith(" with", StringComparison.OrdinalIgnoreCase)
+            || normalizedAnswer.EndsWith(" because", StringComparison.OrdinalIgnoreCase)
+            || normalizedAnswer.EndsWith(" and", StringComparison.OrdinalIgnoreCase)
+            || normalizedAnswer.EndsWith(" i", StringComparison.OrdinalIgnoreCase)
+            || normalizedAnswer.EndsWith(" ali", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatAnswerDates(string answer, string message, string? language)
@@ -155,7 +191,7 @@ public class WeatherChatService : IWeatherChatService
         builder.AppendLine(CultureInfo.InvariantCulture, $"Current UTC time: {DateTime.UtcNow:yyyy-MM-dd HH:mm}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"User question: {message}");
         builder.AppendLine();
-        builder.AppendLine("Retrieved database context:");
+        builder.AppendLine("Retrieved forecast context:");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Location: {context.LocationName} (ID {context.LocationId})");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Coordinates: {context.Latitude}, {context.Longitude}, altitude: {FormatValue(context.Altitude, "m")}");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Forecast fetched at UTC: {context.FetchedAt:yyyy-MM-dd HH:mm}");

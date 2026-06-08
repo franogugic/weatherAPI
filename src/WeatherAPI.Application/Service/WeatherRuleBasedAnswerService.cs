@@ -42,6 +42,12 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
         "when", "what time", "best time", "best period"
     ];
 
+    private static readonly string[] OutdoorPlanKeywords =
+    [
+        "plan", "raspored", "aktivnosti", "aktivnost", "priroda", "vani", "napolje", "izlet", "dan",
+        "schedule", "activities", "activity", "outdoor", "outside", "nature", "day plan"
+    ];
+
     private static readonly string[] ColdestKeywords =
     [
         "najhlad", "hladnije", "coldest", "coolest", "lowest temperature"
@@ -112,13 +118,16 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
 
         if (forecast.Count == 0)
             return isCroatian
-                ? $"Nemam dovoljno podataka u bazi za {context.LocationName} da odgovorim na to pitanje."
-                : $"I do not have enough database weather data for {context.LocationName} to answer that question.";
+                ? $"Nemam dovoljno prognoze za {context.LocationName} da odgovorim na to pitanje."
+                : $"I do not have enough forecast information for {context.LocationName} to answer that question.";
 
         var stats = ForecastStats.Create(forecast);
         var periodLabel = GetPeriodLabel(normalizedMessage, forecast, isCroatian);
         var detectedIntents = DetectIntents(normalizedMessage);
         stats.SetIntents(detectedIntents);
+
+        if (detectedIntents.Contains(WeatherIntent.OutdoorPlan))
+            return BuildOutdoorPlanAnswer(context, forecast, stats, periodLabel, isCroatian);
 
         if (detectedIntents.Contains(WeatherIntent.Walk))
             return BuildWalkAnswer(context, stats, periodLabel, isCroatian);
@@ -228,8 +237,56 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
             intents.Add(WeatherIntent.Clothing);
         if (ContainsAny(normalizedMessage, BestTimeKeywords))
             intents.Add(WeatherIntent.BestTime);
+        if (ContainsAny(normalizedMessage, OutdoorPlanKeywords))
+            intents.Add(WeatherIntent.OutdoorPlan);
 
         return intents;
+    }
+
+    private static string BuildOutdoorPlanAnswer(
+        ChatWeatherForecastContextDto context,
+        IReadOnlyList<ChatWeatherForecastItemDto> forecast,
+        ForecastStats stats,
+        string periodLabel,
+        bool isCroatian)
+    {
+        var morning = FindBestItemInWindow(forecast, 6, 12);
+        var afternoon = FindBestItemInWindow(forecast, 12, 18);
+        var evening = FindBestItemInWindow(forecast, 18, 23);
+        var best = stats.BestActivityTime;
+
+        if (isCroatian)
+        {
+            var builder = new StringBuilder();
+            builder.Append($"{periodLabel} za {context.LocationName}: predložio bih lagan plan aktivnosti u prirodi prema temperaturi i vremenskim uvjetima. ");
+            builder.Append($"Najbolji dio dana izgleda oko {FormatTimeForPeriod(best.ForecastTime, periodLabel, isCroatian)} ");
+            builder.Append($"({FormatTemperature(best.AirTemperature)}, oborine {FormatMillimeters(best.PrecipitationAmount)}, vjetar {FormatWind(best.WindSpeed)}). ");
+
+            if (morning is not null)
+                builder.Append($"Ujutro oko {FormatTimeForPeriod(morning.ForecastTime, periodLabel, isCroatian)} dobro je za šetnju ili lagano trčanje. ");
+            if (afternoon is not null)
+                builder.Append($"Popodne oko {FormatTimeForPeriod(afternoon.ForecastTime, periodLabel, isCroatian)} biraj kraću aktivnost ili odmor u hladu ako temperatura ide visoko. ");
+            if (evening is not null)
+                builder.Append($"Navečer oko {FormatTimeForPeriod(evening.ForecastTime, periodLabel, isCroatian)} je dobar termin za mirniju šetnju. ");
+
+            builder.Append(BuildPracticalAdvice(stats, isCroatian));
+            return builder.ToString();
+        }
+
+        var englishBuilder = new StringBuilder();
+        englishBuilder.Append($"{periodLabel} in {context.LocationName}: I would suggest a light outdoor activity plan based on the temperature and weather conditions. ");
+        englishBuilder.Append($"The best part of the day looks around {FormatTimeForPeriod(best.ForecastTime, periodLabel, isCroatian)} ");
+        englishBuilder.Append($"({FormatTemperature(best.AirTemperature)}, precipitation {FormatMillimeters(best.PrecipitationAmount)}, wind {FormatWind(best.WindSpeed)}). ");
+
+        if (morning is not null)
+            englishBuilder.Append($"In the morning around {FormatTimeForPeriod(morning.ForecastTime, periodLabel, isCroatian)}, a walk or light run looks suitable. ");
+        if (afternoon is not null)
+            englishBuilder.Append($"In the afternoon around {FormatTimeForPeriod(afternoon.ForecastTime, periodLabel, isCroatian)}, choose a shorter activity or shade if it gets warm. ");
+        if (evening is not null)
+            englishBuilder.Append($"In the evening around {FormatTimeForPeriod(evening.ForecastTime, periodLabel, isCroatian)}, a calmer walk looks good. ");
+
+        englishBuilder.Append(BuildPracticalAdvice(stats, isCroatian));
+        return englishBuilder.ToString();
     }
 
     private static string BuildWalkAnswer(
@@ -298,7 +355,7 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
         if (isCroatian)
         {
             var rainSummary = stats.MaxPrecipitation <= 0m
-                ? "baza ne pokazuje oborine"
+                ? "ne očekuju se oborine"
                 : stats.MaxPrecipitation <= 0.5m
                     ? "moguće su vrlo slabe oborine"
                     : stats.MaxPrecipitation <= 2m
@@ -311,7 +368,7 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
         }
 
         var summary = stats.MaxPrecipitation <= 0m
-            ? "the database does not show precipitation"
+            ? "precipitation is not expected"
             : stats.MaxPrecipitation <= 0.5m
                 ? "very light precipitation is possible"
                 : stats.MaxPrecipitation <= 2m
@@ -520,6 +577,18 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
             : $"Tip: {string.Join(", ", notes)}.";
     }
 
+    private static ChatWeatherForecastItemDto? FindBestItemInWindow(
+        IReadOnlyList<ChatWeatherForecastItemDto> forecast,
+        int startHour,
+        int endHour)
+    {
+        return forecast
+            .Where(item => item.ForecastTime.Hour >= startHour && item.ForecastTime.Hour < endHour)
+            .OrderByDescending(ForecastStats.GetActivityScore)
+            .ThenBy(item => item.ForecastTime)
+            .FirstOrDefault();
+    }
+
     private static string GetPeriodLabel(
         string normalizedMessage,
         IReadOnlyCollection<ChatWeatherForecastItemDto> forecast,
@@ -660,7 +729,8 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
         Clouds,
         Pressure,
         Clothing,
-        BestTime
+        BestTime,
+        OutdoorPlan
     }
 
     private sealed class ForecastStats
@@ -716,7 +786,7 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
             Intents = intents;
         }
 
-        private static decimal GetActivityScore(ChatWeatherForecastItemDto item)
+        public static decimal GetActivityScore(ChatWeatherForecastItemDto item)
         {
             var temperature = item.AirTemperature ?? 18m;
             var precipitation = item.PrecipitationAmount ?? 0m;
