@@ -252,20 +252,20 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
     {
         var morning = FindBestItemInWindow(forecast, 6, 12);
         var afternoon = FindBestItemInWindow(forecast, 12, 18);
-        var evening = FindBestItemInWindow(forecast, 18, 23);
-        var best = stats.BestActivityTime;
+        var evening = FindBestItemInWindow(forecast, 18, 22);
+        var best = FindBestItemInWindow(forecast, 6, 21) ?? stats.BestActivityTime;
 
         if (isCroatian)
         {
             var builder = new StringBuilder();
-            builder.Append($"{periodLabel} za {context.LocationName}: predložio bih lagan plan aktivnosti u prirodi prema temperaturi i vremenskim uvjetima. ");
-            builder.Append($"Najbolji dio dana izgleda oko {FormatTimeForPeriod(best.ForecastTime, periodLabel, isCroatian)} ");
+            builder.Append($"{periodLabel} za {context.LocationName}: evo laganog plana za aktivnosti u prirodi. ");
+            builder.Append($"Najugodniji termin izgleda oko {FormatTimeForPeriod(best.ForecastTime, periodLabel, isCroatian)} ");
             builder.Append($"({FormatTemperature(best.AirTemperature)}, oborine {FormatMillimeters(best.PrecipitationAmount)}, vjetar {FormatWind(best.WindSpeed)}). ");
 
             if (morning is not null)
                 builder.Append($"Ujutro oko {FormatTimeForPeriod(morning.ForecastTime, periodLabel, isCroatian)} dobro je za šetnju ili lagano trčanje. ");
             if (afternoon is not null)
-                builder.Append($"Popodne oko {FormatTimeForPeriod(afternoon.ForecastTime, periodLabel, isCroatian)} biraj kraću aktivnost ili odmor u hladu ako temperatura ide visoko. ");
+                builder.Append(BuildAfternoonPlanSentence(afternoon, periodLabel, isCroatian));
             if (evening is not null)
                 builder.Append($"Navečer oko {FormatTimeForPeriod(evening.ForecastTime, periodLabel, isCroatian)} je dobar termin za mirniju šetnju. ");
 
@@ -274,19 +274,38 @@ public class WeatherRuleBasedAnswerService : IWeatherRuleBasedAnswerService
         }
 
         var englishBuilder = new StringBuilder();
-        englishBuilder.Append($"{periodLabel} in {context.LocationName}: I would suggest a light outdoor activity plan based on the temperature and weather conditions. ");
-        englishBuilder.Append($"The best part of the day looks around {FormatTimeForPeriod(best.ForecastTime, periodLabel, isCroatian)} ");
+        englishBuilder.Append($"{periodLabel} in {context.LocationName}: here is a light outdoor activity plan. ");
+        englishBuilder.Append($"The most comfortable time looks around {FormatTimeForPeriod(best.ForecastTime, periodLabel, isCroatian)} ");
         englishBuilder.Append($"({FormatTemperature(best.AirTemperature)}, precipitation {FormatMillimeters(best.PrecipitationAmount)}, wind {FormatWind(best.WindSpeed)}). ");
 
         if (morning is not null)
             englishBuilder.Append($"In the morning around {FormatTimeForPeriod(morning.ForecastTime, periodLabel, isCroatian)}, a walk or light run looks suitable. ");
         if (afternoon is not null)
-            englishBuilder.Append($"In the afternoon around {FormatTimeForPeriod(afternoon.ForecastTime, periodLabel, isCroatian)}, choose a shorter activity or shade if it gets warm. ");
+            englishBuilder.Append(BuildAfternoonPlanSentence(afternoon, periodLabel, isCroatian));
         if (evening is not null)
             englishBuilder.Append($"In the evening around {FormatTimeForPeriod(evening.ForecastTime, periodLabel, isCroatian)}, a calmer walk looks good. ");
 
         englishBuilder.Append(BuildPracticalAdvice(stats, isCroatian));
         return englishBuilder.ToString();
+    }
+
+    private static string BuildAfternoonPlanSentence(
+        ChatWeatherForecastItemDto afternoon,
+        string periodLabel,
+        bool isCroatian)
+    {
+        var time = FormatTimeForPeriod(afternoon.ForecastTime, periodLabel, isCroatian);
+
+        if (isCroatian)
+        {
+            return afternoon.AirTemperature >= 27m
+                ? $"Popodne oko {time} biraj kraću aktivnost ili odmor u hladu jer je toplije. "
+                : $"Popodne oko {time} možeš planirati kraću šetnju ili laganu aktivnost. ";
+        }
+
+        return afternoon.AirTemperature >= 27m
+            ? $"In the afternoon around {time}, choose a shorter activity or shade because it is warmer. "
+            : $"In the afternoon around {time}, a shorter walk or light activity works well. ";
     }
 
     private static string BuildWalkAnswer(

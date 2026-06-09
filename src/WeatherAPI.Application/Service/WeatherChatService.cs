@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using WeatherAPI.Application.Common;
 using WeatherAPI.Application.Dtos;
 using WeatherAPI.Application.Interfaces;
@@ -13,15 +14,18 @@ public class WeatherChatService : IWeatherChatService
     private readonly IWeatherChatRepository _weatherChatRepository;
     private readonly ILlmClient _llmClient;
     private readonly IWeatherRuleBasedAnswerService _ruleBasedAnswerService;
+    private readonly ILogger<WeatherChatService> _logger;
 
     public WeatherChatService(
         IWeatherChatRepository weatherChatRepository,
         ILlmClient llmClient,
-        IWeatherRuleBasedAnswerService ruleBasedAnswerService)
+        IWeatherRuleBasedAnswerService ruleBasedAnswerService,
+        ILogger<WeatherChatService> logger)
     {
         _weatherChatRepository = weatherChatRepository;
         _llmClient = llmClient;
         _ruleBasedAnswerService = ruleBasedAnswerService;
+        _logger = logger;
     }
 
     public async Task<ChatWeatherResponseDto> AskAsync(
@@ -48,18 +52,27 @@ public class WeatherChatService : IWeatherChatService
 
             if (IsLikelyIncompleteAnswer(answer, request.Message))
             {
+                _logger.LogWarning(
+                    "Weather chat LLM response looked incomplete for location {LocationId}; using fallback response.",
+                    request.LocationId);
+
                 answer = _ruleBasedAnswerService.GenerateAnswer(request.Message, context, request.Language);
                 source = "Rules";
             }
         }
         catch (Exception exception) when (ShouldFallbackToRules(exception, cancellationToken))
         {
+            _logger.LogWarning(
+                exception,
+                "Weather chat LLM request failed for location {LocationId}; using fallback response.",
+                request.LocationId);
+
             answer = _ruleBasedAnswerService.GenerateAnswer(request.Message, context, request.Language);
         }
 
         return new ChatWeatherResponseDto
         {
-            Answer = FormatAnswerDates(answer, request.Message, request.Language),
+            Answer = FormatAssistantAnswer(answer, request.Message, request.Language),
             LocationName = context.LocationName,
             DataUpdatedAt = context.UpdatedAt.HasValue
                 ? DateTime.SpecifyKind(context.UpdatedAt.Value, DateTimeKind.Utc)
@@ -81,22 +94,91 @@ public class WeatherChatService : IWeatherChatService
 
     private static string BuildInstructions(string? language)
     {
-        var responseLanguage = string.IsNullOrWhiteSpace(language)
-            ? "the user's language"
-            : language;
+        var responseLanguage = ResolveResponseLanguage(language);
 
         return $$"""
-            You are a weather assistant inside a weather application.
+            You are a calm, helpful weather assistant inside a weather app.
             Answer in {{responseLanguage}}.
+            The selected app language is {{responseLanguage}}. Always use that language, even if the user's message is written in another language.
             The forecast context is the source of truth for weather, location, timing, and measurements.
             Use general meteorological knowledge only to explain what the retrieved values mean or to give practical advice.
             Do not invent missing weather values. If the forecast does not contain enough information for the user's question, say that clearly.
-            Mention the relevant period when the answer depends on time.
+
+            Style:
+            - Sound like a practical local assistant, not a report or a chatbot demo.
+            - Be direct, natural, and easy to scan.
+            - Do not mention "forecast context", "data", "database", "source of truth", "retrieved values", or internal system wording.
+            - Avoid stiff openings like "Based on the provided information" or "According to the data".
+            - Return plain text only. Do not use Markdown, bold markers, headings, tables, or code blocks.
+            - Prefer one short paragraph for simple questions.
+            - Use 3 to 5 short lines only when the user asks for a plan or comparison.
+            - Keep most answers under 90 words.
+
+            Weather behavior:
+            - Mention the relevant period when the answer depends on time.
+            - Give practical advice only when useful, such as umbrella, lighter clothes, water, shade, or wind caution.
+            - If conditions are mixed, say what is good and what to watch out for.
             For Croatian answers, format dates as dd.MM.yyyy. HH:mm.
             If the user asks about a named period such as danas, sutra, večeras, today, tomorrow, or tonight, show only the time like 13:00 instead of a full date.
-            Keep the answer concise, practical, and friendly.
-            If the user asks for a plan, return a complete plan with short time blocks and do not stop mid-sentence.
+            If the user asks for a plan, return a complete compact plan with short time blocks and do not stop mid-sentence.
             """;
+    }
+
+    private static string ResolveResponseLanguage(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+            return "the user's language";
+
+        if (language.StartsWith("hr", StringComparison.OrdinalIgnoreCase))
+            return "Croatian (hr-HR)";
+
+        if (language.StartsWith("en", StringComparison.OrdinalIgnoreCase))
+            return "English";
+
+        return language;
+    }
+
+    private static string FormatAssistantAnswer(string answer, string message, string? language)
+    {
+        var formattedAnswer = RemoveMarkdownFormatting(answer);
+        formattedAnswer = NormalizeWeatherText(formattedAnswer, message, language);
+
+        return FormatAnswerDates(formattedAnswer, message, language);
+    }
+
+    private static string RemoveMarkdownFormatting(string answer)
+    {
+        return answer
+            .Replace("**", string.Empty)
+            .Replace("__", string.Empty)
+            .Replace("```", string.Empty)
+            .Replace("`", string.Empty)
+            .Trim();
+    }
+
+    private static string NormalizeWeatherText(string answer, string message, string? language)
+    {
+        var normalizedAnswer = Regex.Replace(
+            answer,
+            @"(?<value>\d+)(?:\.0)?\s*C\b",
+            "${value} °C",
+            RegexOptions.IgnoreCase);
+
+        if (IsCroatian(message, language))
+        {
+            normalizedAnswer = Regex.Replace(
+                normalizedAnswer,
+                @"\bpadalina\b",
+                "oborina",
+                RegexOptions.IgnoreCase);
+            normalizedAnswer = Regex.Replace(
+                normalizedAnswer,
+                @"\bpadaline\b",
+                "oborine",
+                RegexOptions.IgnoreCase);
+        }
+
+        return normalizedAnswer;
     }
 
     private static bool IsLikelyIncompleteAnswer(string answer, string message)

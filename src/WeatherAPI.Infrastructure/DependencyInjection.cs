@@ -80,6 +80,8 @@ public static class DependencyInjection
             .Validate(options => !string.IsNullOrWhiteSpace(options.Model), "Gemini:Model is required.")
             .Validate(options => options.MaxOutputTokens > 0, "Gemini:MaxOutputTokens must be greater than 0.")
             .Validate(options => options.Temperature is >= 0 and <= 2, "Gemini:Temperature must be between 0 and 2.")
+            .Validate(options => options.MaxRetryAttempts >= 0, "Gemini:MaxRetryAttempts must be 0 or greater.")
+            .Validate(options => options.RetryDelayMilliseconds >= 0, "Gemini:RetryDelayMilliseconds must be 0 or greater.")
             .ValidateOnStart();
 
         services.AddHostedService<ForecastFetchBackgroundService>();
