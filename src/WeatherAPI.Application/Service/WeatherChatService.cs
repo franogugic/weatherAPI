@@ -11,6 +11,7 @@ namespace WeatherAPI.Application.Service;
 public class WeatherChatService : IWeatherChatService
 {
     private const int ForecastDays = 3;
+    private static readonly TimeZoneInfo LocalTimeZone = ResolveLocalTimeZone();
     private readonly IWeatherChatRepository _weatherChatRepository;
     private readonly ILlmClient _llmClient;
     private readonly IWeatherRuleBasedAnswerService _ruleBasedAnswerService;
@@ -100,9 +101,14 @@ public class WeatherChatService : IWeatherChatService
             You are a calm, helpful weather assistant inside a weather app.
             Answer in {{responseLanguage}}.
             The selected app language is {{responseLanguage}}. Always use that language, even if the user's message is written in another language.
-            The forecast context is the source of truth for weather, location, timing, and measurements.
-            Use general meteorological knowledge only to explain what the retrieved values mean or to give practical advice.
-            Do not invent missing weather values. If the forecast does not contain enough information for the user's question, say that clearly.
+
+            Decision rules:
+            - If the question asks about weather, temperature, rain, wind, humidity, clothing, timing, comfort, or planning an outdoor activity around conditions, use the provided forecast as the authority.
+            - Never replace provided forecast values with outside/general weather knowledge.
+            - General knowledge is allowed only for non-weather parts of the answer, such as route ideas, activity suggestions, what a value means, or practical advice.
+            - If the user asks for a route or place recommendation, give a useful general suggestion, but do not claim live map, traffic, opening-hour, or real-time internet access.
+            - If the user asks about weather for a place that is not the active forecast location, say you can give a general non-live suggestion for that place, but the weather details you have are for the active location.
+            - Do not invent weather values. If weather details are missing for a weather-specific question, say that clearly and still offer a helpful general suggestion when possible.
 
             Style:
             - Sound like a practical local assistant, not a report or a chatbot demo.
@@ -116,8 +122,11 @@ public class WeatherChatService : IWeatherChatService
 
             Weather behavior:
             - Mention the relevant period when the answer depends on time.
+            - All forecast times in the user context are local time for Europe/Sarajevo.
+            - The "Current local time" value and every forecast row time are ALREADY in Europe/Sarajevo local time (same as Croatia). Use them exactly as given — do not convert, shift, or adjust them for any timezone.
             - Give practical advice only when useful, such as umbrella, lighter clothes, water, shade, or wind caution.
             - If conditions are mixed, say what is good and what to watch out for.
+            - For route/activity questions, combine the provided weather with practical general knowledge when useful.
             For Croatian answers, format dates as dd.MM.yyyy. HH:mm.
             If the user asks about a named period such as danas, sutra, večeras, today, tomorrow, or tonight, show only the time like 13:00 instead of a full date.
             If the user asks for a plan, return a complete compact plan with short time blocks and do not stop mid-sentence.
@@ -270,14 +279,14 @@ public class WeatherChatService : IWeatherChatService
     private static string BuildInput(string message, ChatWeatherForecastContextDto context)
     {
         var builder = new StringBuilder();
-        builder.AppendLine(CultureInfo.InvariantCulture, $"Current UTC time: {DateTime.UtcNow:yyyy-MM-dd HH:mm}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Current local time: {ToLocalTime(DateTime.UtcNow):yyyy-MM-dd HH:mm} Europe/Sarajevo");
         builder.AppendLine(CultureInfo.InvariantCulture, $"User question: {message}");
         builder.AppendLine();
         builder.AppendLine("Retrieved forecast context:");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Location: {context.LocationName} (ID {context.LocationId})");
         builder.AppendLine(CultureInfo.InvariantCulture, $"Coordinates: {context.Latitude}, {context.Longitude}, altitude: {FormatValue(context.Altitude, "m")}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"Forecast fetched at UTC: {context.FetchedAt:yyyy-MM-dd HH:mm}");
-        builder.AppendLine(CultureInfo.InvariantCulture, $"Forecast updated at UTC: {FormatDate(context.UpdatedAt)}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Forecast fetched at local time: {ToLocalTime(context.FetchedAt):yyyy-MM-dd HH:mm}");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"Forecast updated at local time: {FormatDate(context.UpdatedAt)}");
         builder.AppendLine();
 
         builder.AppendLine("Current/nearest known forecast:");
@@ -296,13 +305,13 @@ public class WeatherChatService : IWeatherChatService
 
     private static string FormatForecastItem(ChatWeatherForecastItemDto item)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"- {item.ForecastTime:yyyy-MM-dd HH:mm} UTC: temp {FormatValue(item.AirTemperature, "C")}, precipitation {FormatValue(item.PrecipitationAmount, "mm")}, wind {FormatValue(item.WindSpeed, "m/s")} from {FormatValue(item.WindDirection, "deg")}, humidity {FormatValue(item.Humidity, "%")}, cloudiness {FormatValue(item.Cloudiness, "%")}, pressure {FormatValue(item.AirPressureAtSeaLevel, "hPa")}, symbol {item.WeatherSymbol ?? "unknown"}");
+        return string.Create(CultureInfo.InvariantCulture, $"- {ToLocalTime(item.ForecastTime):yyyy-MM-dd HH:mm} local: temp {FormatValue(item.AirTemperature, "C")}, precipitation {FormatValue(item.PrecipitationAmount, "mm")}, wind {FormatValue(item.WindSpeed, "m/s")} from {FormatValue(item.WindDirection, "deg")}, humidity {FormatValue(item.Humidity, "%")}, cloudiness {FormatValue(item.Cloudiness, "%")}, pressure {FormatValue(item.AirPressureAtSeaLevel, "hPa")}, symbol {item.WeatherSymbol ?? "unknown"}");
     }
 
     private static string FormatDate(DateTime? value)
     {
         return value.HasValue
-            ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            ? ToLocalTime(value.Value).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
             : "unknown";
     }
 
@@ -312,5 +321,24 @@ public class WeatherChatService : IWeatherChatService
         return value.HasValue
             ? string.Create(CultureInfo.InvariantCulture, $"{value.Value} {unit}")
             : "unknown";
+    }
+
+    private static DateTime ToLocalTime(DateTime value)
+    {
+        return TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(value, DateTimeKind.Utc),
+            LocalTimeZone);
+    }
+
+    private static TimeZoneInfo ResolveLocalTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Europe/Sarajevo");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+        }
     }
 }
